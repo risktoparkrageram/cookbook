@@ -1,0 +1,20 @@
+# Agent instructions name the home setup; they stay local
+AGENTS.md
+CLAUDE.md
+
+# Recipe data and secrets never enter this public repo
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+data/
+deploy/host.env
+deploy/local/
+.env
+.envrc
+
+.venv/
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/

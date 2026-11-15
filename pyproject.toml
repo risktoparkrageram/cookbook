@@ -1,0 +1,44 @@
+[project]
+name = "cookbook"
+version = "0.1.0"
+description = "A self-hosted recipe web app for a home network"
+requires-python = ">=3.13"
+dependencies = [
+    "pydantic>=2.10",
+    "pydantic-settings>=2.7",
+    "tomli-w>=1.1",
+]
+
+[build-system]
+requires = ["uv_build>=0.11.8,<0.12.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "mypy>=1.15",
+    "pytest<9",
+    "pytest-cases>=3.10",
+    "pytest-mock>=3.14",
+    "ruff>=0.11",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+extend-select = ["E", "F", "I", "UP", "B", "D209", "D213", "ANN401", "TID251"]
+
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"unittest.mock".msg = "Use pytest-mock's mocker fixture."
+"os.environ".msg = "Read settings through cookbook.settings.Settings."
+"os.getenv".msg = "Read settings through cookbook.settings.Settings."
+"os.putenv".msg = "Read settings through cookbook.settings.Settings."
+"dataclasses".msg = "Use pydantic models."
+
+[tool.mypy]
+strict = true
+plugins = ["pydantic.mypy"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
