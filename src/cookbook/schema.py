@@ -1,7 +1,12 @@
 import sqlite3
 from importlib import resources
+from typing import Literal, get_args
 
 MIGRATIONS_PACKAGE = "cookbook.migrations"
+
+# Mirrors the CHECK on tags.kind in the migrations; test_schema keeps the two in step.
+type TagKind = Literal["cuisine", "ingredient", "diet", "course", "style", "technique"]
+TAG_KINDS: tuple[str, ...] = get_args(TagKind.__value__)
 
 
 def migration_scripts() -> list[tuple[int, str]]:

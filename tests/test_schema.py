@@ -48,6 +48,16 @@ def test_migrate_refuses_a_database_newer_than_the_code(database: sqlite3.Connec
         schema.migrate(database)
 
 
+def test_tags_accept_exactly_the_python_tag_kinds(database: sqlite3.Connection) -> None:
+    database.executemany(
+        "INSERT INTO tags (name, kind) VALUES (?, ?)", [(kind, kind) for kind in schema.TAG_KINDS]
+    )
+
+    with pytest.raises(sqlite3.IntegrityError):
+        database.execute("INSERT INTO tags (name, kind) VALUES ('beef', 'protein')")
+    assert schema.TAG_KINDS == ("cuisine", "ingredient", "diet", "course", "style", "technique")
+
+
 def test_connect_enables_foreign_keys_and_wal(database: sqlite3.Connection) -> None:
     assert database.execute("PRAGMA foreign_keys").fetchone()[0] == 1
     assert database.execute("PRAGMA journal_mode").fetchone()[0] == "wal"

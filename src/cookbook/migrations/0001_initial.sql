@@ -61,7 +61,7 @@ CREATE TABLE steps (
 CREATE TABLE tags (
     id   INTEGER PRIMARY KEY,
     name TEXT NOT NULL UNIQUE,
-    kind TEXT CHECK (kind IN ('cuisine', 'protein', 'course', 'style', 'technique'))
+    kind TEXT CHECK (kind IN ('cuisine', 'ingredient', 'diet', 'course', 'style', 'technique'))
 );
 
 CREATE TABLE recipe_tags (
