@@ -23,6 +23,7 @@ uv run scripts/lint-and-test.sh   # ruff, format check, mypy --strict, pytest
 | `src/cookbook/draft.py` | `RecipeDraft`: a recipe as a TOML file, for import and export |
 | `src/cookbook/units.py` | Parses quantities such as `1½ cups` or `2 tbsp + 1 tsp` into grams or millilitres |
 | `src/cookbook/search.py` | Keeps the full-text search index for a recipe current |
+| `src/cookbook/passwords.py` | Hashes and verifies the admin password (scrypt) |
 | `src/cookbook/settings.py` | Configuration from `COOKBOOK_*` environment variables |
 
 ## Configuration
