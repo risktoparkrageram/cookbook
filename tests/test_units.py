@@ -90,6 +90,18 @@ def case_stick_of_butter() -> QuantityCase:
     return "1 stick", "us", Amount(minimum=113, maximum=113, unit=BaseUnit.GRAMS)
 
 
+def case_multiplied_piece_size_is_one_piece() -> QuantityCase:
+    return '1 × 3" piece', "us", Amount(minimum=1, maximum=1, unit=None)
+
+
+def case_length_is_not_converted() -> QuantityCase:
+    return "5 cm piece", "uk", None
+
+
+def case_weight_in_brackets_replaces_a_count() -> QuantityCase:
+    return "½ head (~700 g)", "uk", Amount(minimum=700, maximum=700, unit=BaseUnit.GRAMS)
+
+
 def case_count_without_unit() -> QuantityCase:
     return "2", "uk", Amount(minimum=2, maximum=2, unit=None)
 

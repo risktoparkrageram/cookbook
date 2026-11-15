@@ -122,6 +122,8 @@ QUANTITY_PART = re.compile(
     $""",
     re.IGNORECASE | re.VERBOSE,
 )
+LENGTH_WORDS = {"cm", "mm", "inch", "inches", "in", '"'}
+BRACKETED = re.compile(r"\(([^)]*)\)")
 MULTIPLIED = re.compile(r"^(?P<count>\d+)\s*[x×]\s*(?P<each>.+)$", re.IGNORECASE)
 UNIT_WORD = re.compile(r"^(fl\.?\s*oz|fluid\s+ounces?|[a-z]+)\.?(?=\s|$)", re.IGNORECASE)
 
@@ -139,10 +141,10 @@ def number_value(text: str) -> float:
 def parse_part(text: str, system: MeasureSystem) -> Amount | None:
     multiplied = MULTIPLIED.match(text)
     if multiplied:
-        each = parse_part(multiplied["each"], system)
-        if each is None:
-            return None
         count = int(multiplied["count"])
+        each = parse_part(multiplied["each"], system)
+        if each is None or each.unit is None:
+            return Amount(minimum=count, maximum=count, unit=None)
         return Amount(minimum=each.minimum * count, maximum=each.maximum * count, unit=each.unit)
 
     match = QUANTITY_PART.match(text.strip())
@@ -155,7 +157,10 @@ def parse_part(text: str, system: MeasureSystem) -> Amount | None:
     elif high < low:
         return None
 
-    unit_match = UNIT_WORD.match(match["rest"])
+    rest = match["rest"]
+    if rest.startswith('"') or rest.split(" ", 1)[0].lower() in LENGTH_WORDS:
+        return None
+    unit_match = UNIT_WORD.match(rest)
     if unit_match is None:
         return Amount(minimum=low, maximum=high, unit=None)
     unit_key = UNIT_ALIASES.get(" ".join(unit_match[1].lower().replace(".", " ").split()))
@@ -175,7 +180,9 @@ def parse_quantity(text: str, system: MeasureSystem) -> Amount | None:
     Handles unicode and slash fractions, mixed numbers, ranges, "2 x 400g" multiples and
     "2 tbsp + 1 tsp" compounds. cup, tbsp, pint and fl oz depend on the recipe's measure
     system. Text after a recognised unit ("28g pack") is ignored; a number followed by
-    anything else ("2 cloves") is a count.
+    anything else ("2 cloves") is a count, and "1 x 3-inch piece" is one piece. A weight
+    or volume in brackets replaces a count ("½ head (~700 g)" is 700 g). Lengths
+    ("5 cm piece") are not amounts.
     """
     normalised = re.sub(
         r"(\d)?\s*([½⅓⅔¼¾⅕⅛⅜⅝⅞])",
@@ -184,6 +191,13 @@ def parse_quantity(text: str, system: MeasureSystem) -> Amount | None:
     ).strip()
     if not normalised:
         return None
+    bracketed = BRACKETED.search(normalised)
+    if bracketed:
+        main = parse_quantity(BRACKETED.sub("", normalised), system)
+        alternative = parse_quantity(bracketed[1], system)
+        if (main is None or main.unit is None) and alternative and alternative.unit:
+            return alternative
+        return main
     parts = [parse_part(part, system) for part in normalised.split("+")]
     if any(part is None for part in parts):
         return None
