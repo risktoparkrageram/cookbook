@@ -1,8 +1,15 @@
 import sqlite3
 
 import pytest
+from pytest_cases import case, parametrize_with_cases
 
 from cookbook import search
+from cookbook.search import SearchFilters
+
+# what someone typed, the FTS5 expression it becomes
+type ExpressionCase = tuple[str, str | None]
+# the search, the slugs it finds in order
+type FindCase = tuple[SearchFilters, list[str]]
 
 
 @pytest.fixture
@@ -116,3 +123,194 @@ def test_search_matches_notes_sources_and_ignores_accents(
     ).fetchall()
 
     assert [slug for (slug,) in found] == slugs
+
+
+@case(tags="expression")
+def case_words_are_quoted_and_the_last_is_a_prefix() -> ExpressionCase:
+    return "spring onion", '"spring" "onion"*'
+
+
+@case(tags="expression")
+def case_a_trailing_space_ends_the_prefix() -> ExpressionCase:
+    return "onion ", '"onion"'
+
+
+@case(tags="expression")
+def case_a_closed_phrase_stays_whole() -> ExpressionCase:
+    return '"spring onion"', '"spring onion"'
+
+
+@case(tags="expression")
+def case_an_unclosed_phrase_is_a_prefix() -> ExpressionCase:
+    return 'lime "spring on', '"lime" "spring on"*'
+
+
+@case(tags="expression")
+def case_operators_are_plain_words() -> ExpressionCase:
+    return "salt OR NOT pepper", '"salt" "OR" "NOT" "pepper"*'
+
+
+@case(tags="expression")
+def case_fts_syntax_is_quoted() -> ExpressionCase:
+    return "title:soup NEAR(a b) ^x", '"title:soup" "NEAR(a" "b)" "^x"*'
+
+
+@case(tags="expression")
+def case_quotes_inside_a_word_are_doubled() -> ExpressionCase:
+    return 'say"cheese', '"say""cheese"*'
+
+
+@case(tags="expression")
+def case_punctuation_alone_is_dropped() -> ExpressionCase:
+    return '- * " ( ', None
+
+
+@case(tags="expression")
+def case_nothing_typed() -> ExpressionCase:
+    return "", None
+
+
+@parametrize_with_cases("text, expected", cases=".", has_tag="expression")
+def test_match_expression(text: str, expected: str | None) -> None:
+    assert search.match_expression(text) == expected
+
+
+@pytest.mark.parametrize(
+    "text", ['"', '""', 'a"b"c', "*", "tofu*", "(tofu", "tofu)", "NOT", "-tofu", "tofu:", "'"]
+)
+def test_awkward_input_never_breaks_the_query(recipes: sqlite3.Connection, text: str) -> None:
+    """Whatever is typed, FTS5 gets a valid expression: no OperationalError."""
+    search.find(recipes, SearchFilters(q=text))
+
+
+@case(tags="find")
+def case_find_everything_not_archived_by_title() -> FindCase:
+    return SearchFilters(), ["almond_biscuits", "chilli_oil_noodles", "tofu_rice_bowl"]
+
+
+@case(tags="find")
+def case_find_ranks_title_and_tags_above_a_step() -> FindCase:
+    return SearchFilters(q="tofu"), ["tofu_rice_bowl", "chilli_oil_noodles"]
+
+
+@case(tags="find")
+def case_find_by_prefix_of_the_last_word() -> FindCase:
+    return SearchFilters(q="noodl"), ["chilli_oil_noodles"]
+
+
+@case(tags="find")
+def case_find_terms_are_anded() -> FindCase:
+    return SearchFilters(q="tofu golden"), ["tofu_rice_bowl"]
+
+
+@case(tags="find")
+def case_find_in_notes() -> FindCase:
+    return SearchFilters(q="cast iron"), ["tofu_rice_bowl"]
+
+
+@case(tags="find")
+def case_find_query_sorted_by_title() -> FindCase:
+    return SearchFilters(q="tofu", sort="title"), ["chilli_oil_noodles", "tofu_rice_bowl"]
+
+
+@case(tags="find")
+def case_find_archived_only_when_asked() -> FindCase:
+    return SearchFilters(q="turnip", archived=True), ["old_turnip_stew"]
+
+
+@case(tags="find")
+def case_find_archived_hidden_by_default() -> FindCase:
+    return SearchFilters(q="turnip"), []
+
+
+@case(tags="find")
+def case_find_by_one_tag() -> FindCase:
+    return SearchFilters(tag=["asian"]), ["chilli_oil_noodles", "tofu_rice_bowl"]
+
+
+@case(tags="find")
+def case_find_tags_are_anded() -> FindCase:
+    return SearchFilters(tag=["asian", "korean"]), ["tofu_rice_bowl"]
+
+
+@case(tags="find")
+def case_find_tags_from_different_recipes_find_nothing() -> FindCase:
+    return SearchFilters(tag=["korean", "quick"]), []
+
+
+@case(tags="find")
+def case_find_query_and_tag_together() -> FindCase:
+    return SearchFilters(q="tofu", tag=["quick"]), ["chilli_oil_noodles"]
+
+
+@case(tags="find")
+def case_find_by_publication() -> FindCase:
+    return SearchFilters(publication="Balcony Bakes"), ["almond_biscuits"]
+
+
+@case(tags="find")
+def case_find_by_author() -> FindCase:
+    return SearchFilters(author="Ada Example"), ["chilli_oil_noodles", "tofu_rice_bowl"]
+
+
+@case(tags="find")
+def case_find_by_source() -> FindCase:
+    return SearchFilters(source=2), ["almond_biscuits"]
+
+
+@case(tags="find")
+def case_find_by_ingredient_not_step_text() -> FindCase:
+    return SearchFilters(ingredient="TOFU"), ["tofu_rice_bowl"]
+
+
+@case(tags="find")
+def case_find_ingredient_wildcards_are_literal() -> FindCase:
+    return SearchFilters(ingredient="%"), []
+
+
+@case(tags="find")
+def case_find_total_time_limit_includes_the_bound() -> FindCase:
+    return SearchFilters(max_total=32), ["almond_biscuits", "chilli_oil_noodles"]
+
+
+@case(tags="find")
+def case_find_by_hands_on_time() -> FindCase:
+    return SearchFilters(max_prep=10), ["chilli_oil_noodles"]
+
+
+@case(tags="find")
+def case_find_serves_from_overlaps_the_range() -> FindCase:
+    return SearchFilters(serves_from=3), ["almond_biscuits", "tofu_rice_bowl"]
+
+
+@case(tags="find")
+def case_find_serves_to_overlaps_the_range() -> FindCase:
+    return SearchFilters(serves_to=2), ["chilli_oil_noodles", "tofu_rice_bowl"]
+
+
+@case(tags="find")
+def case_find_with_notes() -> FindCase:
+    return SearchFilters(has_notes=True), ["almond_biscuits", "tofu_rice_bowl"]
+
+
+@case(tags="find")
+def case_find_quickest_first_untimed_last() -> FindCase:
+    return SearchFilters(sort="time", archived=True), [
+        "chilli_oil_noodles",
+        "almond_biscuits",
+        "tofu_rice_bowl",
+        "old_turnip_stew",
+    ]
+
+
+@case(tags="find")
+def case_find_most_recently_edited_note_first() -> FindCase:
+    return SearchFilters(sort="noted"), ["almond_biscuits", "tofu_rice_bowl", "chilli_oil_noodles"]
+
+
+@parametrize_with_cases("filters, slugs", cases=".", has_tag="find")
+def test_find(recipes: sqlite3.Connection, filters: SearchFilters, slugs: list[str]) -> None:
+    found = search.find(recipes, filters)
+
+    slug_by_id = dict(recipes.execute("SELECT id, slug FROM recipes").fetchall())
+    assert [slug_by_id[recipe_id] for recipe_id in found] == slugs
