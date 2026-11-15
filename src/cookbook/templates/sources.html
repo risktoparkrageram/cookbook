@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Sources · Cookbook{% endblock %}
+{% block body %}
+<main class="wrap">
+  <div class="page-head">
+    <h1 class="page-title">Sources</h1>
+  </div>
+  <ul class="rows">
+    {% for source in sources %}
+    <li>
+      <a href="/sources/{{ source.id }}">
+        <span class="row-title">{{ source.publication }}</span>
+        {% if source.author %}<span class="row-sub">{{ source.author }}</span>{% endif %}
+      </a>
+      <span class="count">{{ source.recipe_count }}</span>
+    </li>
+    {% else %}
+    <li class="empty">No sources.</li>
+    {% endfor %}
+  </ul>
+</main>
+{% endblock %}

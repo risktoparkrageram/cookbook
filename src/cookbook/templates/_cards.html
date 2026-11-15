@@ -1,0 +1,20 @@
+<ul class="cards">
+  {% for card in cards %}
+  <li>
+    <a class="card" href="/recipes/{{ card.slug }}">
+      {% if card.card %}
+      <img src="{{ card.card.url }}" width="{{ card.card.width }}" height="{{ card.card.height }}" alt="{{ card.card.alt or '' }}"{% if loop.index > 2 %} loading="lazy"{% endif %}>
+      {% else %}
+      <span class="no-image"></span>
+      {% endif %}
+      <span class="card-text">
+        <span class="kicker label">{{ card.kicker }}</span>
+        <span class="card-title">{{ card.title }}</span>
+        {% if card.total_min %}<span class="card-time">{{ card.total_min|minutes }}</span>{% endif %}
+      </span>
+    </a>
+  </li>
+  {% else %}
+  <li class="empty">No recipes.</li>
+  {% endfor %}
+</ul>

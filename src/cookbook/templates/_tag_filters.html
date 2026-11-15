@@ -1,0 +1,14 @@
+<div id="tag-filters"{% if oob %} hx-swap-oob="true"{% endif %}>
+  {% for kind, tags in tag_groups.items() %}
+  <fieldset class="tag-group">
+    <legend class="label">{{ kind or "Other" }}</legend>
+    {% for tag in tags %}
+    {% set checked = tag.name in filters.tag %}
+    <label class="check{% if not tag.recipe_count and not checked %} none{% endif %}">
+      <input type="checkbox" name="tag" value="{{ tag.name }}"{% if checked %} checked{% endif %}>
+      <span>{{ tag.name }}</span> <span class="count">{{ tag.recipe_count }}</span>
+    </label>
+    {% endfor %}
+  </fieldset>
+  {% endfor %}
+</div>

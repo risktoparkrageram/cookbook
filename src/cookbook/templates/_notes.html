@@ -1,0 +1,13 @@
+<div class="notes" id="{{ 'notes-step-%d'|format(step_id) if step_id else 'notes' }}">
+  {% for note in notes %}{% include "_note.html" %}{% endfor %}
+  {% if user %}
+  <details class="add-note">
+    <summary>+ Note</summary>
+    <form method="post" action="/recipes/{{ slug }}/notes" hx-post="/recipes/{{ slug }}/notes" hx-target="closest .notes" hx-swap="outerHTML">
+      {% if step_id %}<input type="hidden" name="step_id" value="{{ step_id }}">{% endif %}
+      <textarea name="body" required maxlength="1000" rows="3" aria-label="New note" placeholder="{{ 'Note on this step' if step_id else 'Note on this recipe' }}"></textarea>
+      <div class="note-actions"><button class="label">Save</button></div>
+    </form>
+  </details>
+  {% endif %}
+</div>

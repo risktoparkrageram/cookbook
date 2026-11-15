@@ -4,9 +4,16 @@ version = "0.1.0"
 description = "A self-hosted recipe web app for a home network"
 requires-python = ">=3.13"
 dependencies = [
+    "fastapi>=0.163.1",
+    "itsdangerous>=2.2.0",
+    "jinja2>=3.1.6",
+    "pillow>=13.0.0",
     "pydantic>=2.10",
     "pydantic-settings>=2.7",
+    "python-multipart>=0.0.33",
+    "reportlab>=5.1.0",
     "tomli-w>=1.1",
+    "uvicorn>=0.54.0",
 ]
 
 [build-system]
@@ -15,11 +22,14 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
+    "httpx2>=2.16.0",
     "mypy>=1.15",
+    "pypdf>=7.1.0",
     "pytest<9",
     "pytest-cases>=3.10",
     "pytest-mock>=3.14",
     "ruff>=0.11",
+    "types-reportlab>=5.1.0.20261104",
 ]
 
 [tool.ruff]

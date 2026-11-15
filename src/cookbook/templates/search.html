@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}{% if filters.q.strip() %}{{ filters.q }} · {% endif %}Cookbook{% endblock %}
+{% block search_fields %}
+<dialog id="filters" class="sheet" aria-labelledby="filters-title">
+  <div class="sheet-head">
+    <h2 id="filters-title" class="label">Filters</h2>
+    <button type="button" class="label" data-closes>Done</button>
+  </div>
+
+  <label class="field"><span class="label">Sort</span>
+    <select name="sort">
+      {% for value, name in [("", "Best match"), ("title", "Title"), ("time", "Quickest"), ("noted", "Recently noted")] %}
+      <option value="{{ value }}"{% if (filters.sort or "") == value %} selected{% endif %}>{{ name }}</option>
+      {% endfor %}
+    </select>
+  </label>
+
+  {% include "_tag_filters.html" %}
+
+  <label class="field"><span class="label">Ingredient</span>
+    <input type="text" name="ingredient" value="{{ filters.ingredient or '' }}" autocomplete="off" placeholder="e.g. lime">
+  </label>
+
+  <div class="field-row">
+    {% for name, text, value in [("max_total", "Total time", filters.max_total), ("max_prep", "Prep time", filters.max_prep)] %}
+    <label class="field"><span class="label">{{ text }}</span>
+      <select name="{{ name }}">
+        <option value="">Any</option>
+        {% for minutes in time_limits %}<option value="{{ minutes }}"{% if value == minutes %} selected{% endif %}>≤ {{ minutes|minutes }}</option>{% endfor %}
+      </select>
+    </label>
+    {% endfor %}
+  </div>
+
+  <div class="field-row">
+    <label class="field"><span class="label">Serves from</span>
+      <input type="number" name="serves_from" min="1" inputmode="numeric" value="{{ filters.serves_from or '' }}">
+    </label>
+    <label class="field"><span class="label">Serves to</span>
+      <input type="number" name="serves_to" min="1" inputmode="numeric" value="{{ filters.serves_to or '' }}">
+    </label>
+  </div>
+
+  {% for name, text, values in [("publication", "Publication", sources|map(attribute="publication")|unique|list), ("author", "Author", sources|map(attribute="author")|select|unique|sort|list)] %}
+  <label class="field"><span class="label">{{ text }}</span>
+    <select name="{{ name }}">
+      <option value="">Any</option>
+      {% for value in values %}<option{% if filters[name] == value %} selected{% endif %}>{{ value }}</option>{% endfor %}
+    </select>
+  </label>
+  {% endfor %}
+  {% if filters.source %}<input type="hidden" name="source" value="{{ filters.source }}">{% endif %}
+
+  <label class="check"><input type="checkbox" name="has_notes" value="true"{% if filters.has_notes %} checked{% endif %}> <span>Has notes</span></label>
+  <label class="check"><input type="checkbox" name="archived" value="true"{% if filters.archived %} checked{% endif %}> <span>Include archived</span></label>
+
+  <div class="sheet-foot">
+    <a class="label" href="/">Clear all</a>
+    <button type="button" class="label" data-closes>Show results</button>
+  </div>
+</dialog>
+{% endblock %}
+{% block body %}
+<main class="wrap" id="results">
+  {% include "_results.html" %}
+</main>
+{% endblock %}

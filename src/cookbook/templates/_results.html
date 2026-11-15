@@ -1,0 +1,10 @@
+<div class="page-head">
+  <h1 class="page-title">{{ "“" ~ filters.q ~ "”" if filters.q.strip() else "Recipes" }}</h1>
+  <div class="results-bar">
+    <p class="count label">{{ cards|length }} recipe{{ "" if cards|length == 1 else "s" }}</p>
+    {% set filter_count = filters.filter_count() %}
+    {% if filter_count or filters.q %}<a class="clear label" href="/">Clear</a>{% endif %}
+    <button type="button" class="filters-button label" data-opens="filters">Filters{% if filter_count %} ({{ filter_count }}){% endif %}</button>
+  </div>
+</div>
+{% include "_cards.html" %}

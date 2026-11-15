@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}{{ heading }} · Cookbook{% endblock %}
+{% block body %}
+<main class="wrap">
+  <div class="page-head">
+    {% if label %}<div class="kicker label">{{ label }}</div>{% endif %}
+    <h1 class="page-title">{{ heading }}</h1>
+    <p class="count label">{{ cards|length }} recipe{{ "" if cards|length == 1 else "s" }}</p>
+  </div>
+  {% include "_cards.html" %}
+</main>
+{% endblock %}

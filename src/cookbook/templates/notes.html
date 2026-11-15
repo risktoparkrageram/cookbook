@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Notes · Cookbook{% endblock %}
+{% block body %}
+<main class="wrap">
+  <div class="page-head">
+    <h1 class="page-title">Notes</h1>
+  </div>
+  <ul class="rows">
+    {% for note in notes %}
+    <li>
+      <a href="/recipes/{{ note.recipe_slug }}#{{ 'notes-step-%d'|format(note.step_id) if note.step_id else 'notes' }}">
+        <span class="label kicker">{{ note.recipe_title }}{% if note.step_position %} · Step {{ note.step_position }}: {{ note.step_title }}{% endif %}</span>
+        <span class="row-note">{{ note.body }}</span>
+        <time class="row-sub" datetime="{{ note.created_at }}Z">{{ note.created_at|local_time }}</time>
+      </a>
+    </li>
+    {% else %}
+    <li class="empty">No notes yet.</li>
+    {% endfor %}
+  </ul>
+</main>
+{% endblock %}

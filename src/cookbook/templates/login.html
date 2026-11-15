@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Sign in · Cookbook{% endblock %}
+{% block body %}
+<main class="wrap">
+  <div class="page-head">
+    <h1 class="page-title">Sign in</h1>
+  </div>
+  {% if user %}
+  <p class="intro">Signed in as {{ user.email }}.</p>
+  {% else %}
+  <form class="login" method="post" action="/login">
+    {% if failed %}<p class="error" role="alert">That email and password don’t match.</p>{% endif %}
+    <input type="hidden" name="next" value="{{ next }}">
+    <label class="field"><span class="label">Email</span>
+      <input type="email" name="email" value="{{ email }}" autocomplete="username" required autocapitalize="off">
+    </label>
+    <label class="field"><span class="label">Password</span>
+      <input type="password" name="password" autocomplete="current-password" required>
+    </label>
+    <button class="label submit">Sign in</button>
+  </form>
+  {% endif %}
+</main>
+{% endblock %}

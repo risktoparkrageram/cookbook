@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}{{ recipe.title }} · Cookbook{% endblock %}
+{% block head %}<script src="/static/cook.js" defer></script>{% endblock %}
+{% macro pieces(text_pieces) -%}
+{%- for piece in text_pieces -%}
+{%- if piece.metric -%}<span class="conv" data-metric="{{ piece.metric }}">{{ piece.text }}</span>{%- else -%}{{ piece.text }}{%- endif -%}
+{%- endfor -%}
+{%- endmacro %}
+{% block body %}
+<div class="wrap">
+  <div class="head">
+    <div class="kicker label">{{ recipe.kicker }}{% if recipe.archived %} · Archived{% endif %}</div>
+    <h1>{{ recipe.title }}</h1>
+    {% if recipe.source or recipe.url %}
+    <p class="source">
+      {%- set source_text = [recipe.source.publication, recipe.source.author]|select|join(" · ") if recipe.source else "" -%}
+      {%- if recipe.url -%}
+      <a href="{{ recipe.url }}" rel="noreferrer">{{ source_text or "Source" }}</a>
+      {%- else -%}
+      {{ source_text }}
+      {%- endif -%}
+      {%- if recipe.archive_url %} <a class="archive" href="{{ recipe.archive_url }}" rel="noreferrer">Archived copy</a>{% endif -%}
+    </p>
+    {% endif %}
+    {% set times = [("Prep", recipe.prep_min), ("Cook", recipe.cook_min), ("Rest", recipe.rest_min), ("Total", recipe.total_min)] %}
+    {% if times|selectattr(1)|list %}
+    <dl class="meta">
+      {% for name, minutes in times if minutes %}
+      <div><dt class="label">{{ name }}</dt><dd>{{ minutes|minutes }}</dd></div>
+      {% endfor %}
+    </dl>
+    {% endif %}
+    {% if recipe.tags %}
+    <div class="tags">
+      {% for tag in recipe.tags %}<a class="tag" href="/tags/{{ tag.name|urlencode }}">{{ tag.name }}</a>{% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% if recipe.hero %}
+<figure class="hero-figure">
+  <img class="hero" src="{{ recipe.hero.url }}" width="{{ recipe.hero.width }}" height="{{ recipe.hero.height }}" alt="{{ recipe.hero.alt or '' }}">
+  {% if recipe.hero.credit %}<figcaption class="wrap credit">{{ recipe.hero.credit }}</figcaption>{% endif %}
+</figure>
+{% endif %}
+
+<main class="wrap" data-recipe="{{ recipe.slug }}">
+  {% if recipe.intro %}<p class="intro">{{ recipe.intro }}</p>{% endif %}
+  {% with notes=recipe.notes, slug=recipe.slug, step_id=none %}{% include "_notes.html" %}{% endwith %}
+
+  <div class="toggle" role="tablist">
+    <button type="button" role="tab" data-tab="ingredients" aria-selected="true">Ingredients</button>
+    <button type="button" role="tab" data-tab="method" aria-selected="false">Method</button>
+  </div>
+  <div class="cols">
+    <section id="ingredients" role="tabpanel">
+      <h2 class="label">Ingredients</h2>
+      {% set conversions = recipe.has_conversions() %}
+      {% if recipe.serves_options or recipe.serves_text or conversions %}
+      <div class="serves">
+        {% set verb = "makes" if recipe.yield_unit else "serves" %}
+        {% if recipe.serves_options %}
+        {% set as_written = (recipe.serves_options|selectattr("as_written")|first).label ~ (" " ~ recipe.yield_unit if recipe.yield_unit else "") %}
+        <label class="label" for="serves">{{ verb }}</label>
+        <span class="picker"><select id="serves">
+          {% for option in recipe.serves_options %}
+          <option value="{{ '%g'|format(option.factor) }}"{% if option.as_written %} selected{% endif %}>{{ option.label }}</option>
+          {% endfor %}
+        </select></span>
+        {% if recipe.yield_unit %}<span class="yield-unit">{{ recipe.yield_unit }}</span>{% endif %}
+        <span class="scaled" hidden>Recipe {{ verb }} {{ as_written }}</span>
+        {% elif recipe.serves_text %}
+        <span class="label">{{ verb }}</span>
+        <span class="serves-text">{{ recipe.serves_text }}</span>
+        {% endif %}
+        {% if conversions %}
+        <span class="units" role="group" aria-label="Units">
+          <button type="button" data-units="written" aria-pressed="true">As written</button>
+          <button type="button" data-units="metric" aria-pressed="false">Metric</button>
+        </span>
+        {% endif %}
+      </div>
+      {% endif %}
+      {% for section in recipe.sections %}
+      {% set section_number = loop.index %}
+      {% if section.name %}<h3 class="label">{{ section.name }}</h3>{% endif %}
+      <ul class="ing">
+        {% for ingredient in section.ingredients %}
+        <li data-tick="i{{ section_number }}-{{ loop.index }}"><span class="q"
+          {%- if ingredient.metric %} data-metric-min="{{ '%g'|format(ingredient.metric.minimum) }}" data-metric-max="{{ '%g'|format(ingredient.metric.maximum) }}" data-metric-unit="{{ ingredient.metric.unit }}"{% endif %}>
+          {%- for token in ingredient.quantity_tokens -%}
+          {%- if token.kind == "text" -%}
+          {{ token.text }}
+          {%- else -%}
+          <span class="n" data-value="{{ '%g'|format(token.value) }}"{% if token.kind == "metric" %} data-metric{% elif token.kind == "size" %} data-size{% endif %}>{{ token.text }}</span>
+          {%- endif -%}
+          {%- endfor -%}
+        </span> <span class="item">{{ pieces(ingredient.item_pieces) }}</span></li>
+        {% endfor %}
+      </ul>
+      {% endfor %}
+    </section>
+    <section id="method" role="tabpanel">
+      <h2 class="label">Method</h2>
+      <ol class="steps">
+        {% for step in recipe.steps %}
+        <li data-tick="s{{ step.position }}">
+          <div class="marker">
+            <span class="num">{{ "%02d"|format(loop.index) }}</span>
+            <button type="button" class="step-tick" aria-label="Step {{ loop.index }} done" aria-pressed="false"></button>
+          </div>
+          <div>
+            <h4 class="step-title">{{ step.title }}</h4>
+            <p>{{ pieces(step.text_pieces) }}</p>
+            {% with notes=step.notes, slug=recipe.slug, step_id=step.id %}{% include "_notes.html" %}{% endwith %}
+          </div>
+        </li>
+        {% endfor %}
+      </ol>
+    </section>
+  </div>
+  <button type="button" class="reset label" hidden>Reset ticks and serves</button>
+  <div class="exports">
+    <span class="label">Export</span>
+    <a href="/recipes/{{ recipe.slug }}/export.pdf">PDF</a>
+    <a href="/recipes/{{ recipe.slug }}/export.pdf?notes=0">PDF without notes</a>
+    <a href="/recipes/{{ recipe.slug }}/export.zip" download>Draft (zip)</a>
+  </div>
+</main>
+{% endblock %}

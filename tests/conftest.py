@@ -3,8 +3,12 @@ from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
+from fastapi.testclient import TestClient
 
 from cookbook import db, schema, search
+from cookbook.app import create_app
+from cookbook.passwords import hash_password
+from cookbook.settings import Settings
 
 
 @pytest.fixture
@@ -83,3 +87,28 @@ def recipes(database: sqlite3.Connection) -> sqlite3.Connection:
     for recipe_id in range(1, 5):
         search.refresh(database, recipe_id)
     return database
+
+
+@pytest.fixture
+def client(recipes: sqlite3.Connection, database_path: Path) -> Iterator[TestClient]:
+    settings = Settings(db_path=database_path, secret_key="s" * 32)
+    with TestClient(create_app(settings)) as test_client:
+        yield test_client
+
+
+@pytest.fixture
+def admin(recipes: sqlite3.Connection) -> str:
+    """The admin account, password "correct horse battery"; returns its email."""
+    recipes.execute(
+        "INSERT INTO users (id, email, password_hash) VALUES (1, 'cook@example.com', ?)",
+        (hash_password("correct horse battery"),),
+    )
+    return "cook@example.com"
+
+
+@pytest.fixture
+def admin_client(client: TestClient, admin: str) -> TestClient:
+    """The client signed in as the admin, sending this site's Origin with every request."""
+    client.headers["Origin"] = "http://testserver"
+    client.post("/login", data={"email": admin, "password": "correct horse battery"})
+    return client

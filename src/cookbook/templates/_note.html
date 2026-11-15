@@ -1,0 +1,19 @@
+<div class="note">
+  <p>{{ note.body }}</p>
+  <div class="note-meta">
+    <time datetime="{{ note.created_at }}Z" title="{{ note.created_at|local_time }}">{{ note.created_at|local_date }}</time>
+    {%- if note.updated_at != note.created_at %} · edited{% endif %}
+    {% if user %}
+    <details class="note-edit">
+      <summary>Edit</summary>
+      <form method="post" action="/notes/{{ note.id }}" hx-post="/notes/{{ note.id }}" hx-target="closest .notes" hx-swap="outerHTML">
+        <textarea name="body" required maxlength="1000" rows="3" aria-label="Note">{{ note.body }}</textarea>
+        <div class="note-actions">
+          <button class="label">Save</button>
+          <button type="button" class="label delete" hx-delete="/notes/{{ note.id }}" hx-confirm="Delete note?" hx-target="closest .notes" hx-swap="outerHTML">Delete</button>
+        </div>
+      </form>
+    </details>
+    {% endif %}
+  </div>
+</div>

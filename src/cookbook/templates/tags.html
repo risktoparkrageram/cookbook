@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Tags · Cookbook{% endblock %}
+{% block body %}
+<main class="wrap">
+  <div class="page-head">
+    <h1 class="page-title">Tags</h1>
+  </div>
+  {% for kind, tags in groups.items() %}
+  <section class="group">
+    <h2 class="label">{{ kind or "Other" }}</h2>
+    <ul class="tag-list">
+      {% for tag in tags %}
+      <li><a class="tag" href="/tags/{{ tag.name|urlencode }}">{{ tag.name }}</a> <span class="count">{{ tag.recipe_count }}</span></li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% else %}
+  <p class="empty">No tags.</p>
+  {% endfor %}
+</main>
+{% endblock %}
