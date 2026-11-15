@@ -3,7 +3,15 @@ import tomllib
 from typing import Annotated, Self
 
 import tomli_w
-from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    BeforeValidator,
+    ConfigDict,
+    Field,
+    StringConstraints,
+    field_validator,
+    model_validator,
+)
 
 from cookbook.units import MeasureSystem
 
@@ -14,6 +22,8 @@ SERVES_PATTERN = re.compile(
     re.IGNORECASE,
 )
 SERVES_UNIT_WORDS = {"people", "person", "portions", "servings"}
+
+type NonBlankText = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 
 
 def ingredient_pair_to_mapping(value: object) -> object:
@@ -43,6 +53,15 @@ class IngredientSection(BaseModel):
     items: list[Annotated[IngredientLine, BeforeValidator(ingredient_pair_to_mapping)]] = Field(
         min_length=1
     )
+
+
+class Step(BaseModel):
+    """One method step: a short heading ("Brown the chicken") and the instructions."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    title: NonBlankText
+    text: NonBlankText
 
 
 class DraftImages(BaseModel):
@@ -80,7 +99,7 @@ class RecipeDraft(BaseModel):
     total_min: int | None = Field(default=None, ge=0)
     intro: str | None = None
     tags: list[str] = []
-    steps: list[str] = Field(min_length=1)
+    steps: list[Step] = Field(min_length=1)
     images: DraftImages | None = None
     sections: list[IngredientSection] = []
 
@@ -89,14 +108,6 @@ class RecipeDraft(BaseModel):
     def normalise_tags(cls, tags: list[str]) -> list[str]:
         normalised = [" ".join(tag.lower().split()) for tag in tags]
         return list(dict.fromkeys(tag for tag in normalised if tag))
-
-    @field_validator("steps")
-    @classmethod
-    def strip_steps(cls, steps: list[str]) -> list[str]:
-        stripped = [step.strip() for step in steps]
-        if not all(stripped):
-            raise ValueError("steps must not be empty")
-        return stripped
 
     @model_validator(mode="after")
     def default_total(self) -> Self:

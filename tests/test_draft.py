@@ -7,6 +7,7 @@ from cookbook.draft import (
     IngredientLine,
     IngredientSection,
     RecipeDraft,
+    Step,
     parse_serves,
 )
 
@@ -23,7 +24,10 @@ def case_full_draft() -> RecipeDraft:
         prep_min=10,
         cook_min=10,
         tags=["japanese", "quick"],
-        steps=["Boil the noodles.", "Melt the butter with the miso."],
+        steps=[
+            Step(title="Boil", text="Boil the noodles."),
+            Step(title="Make the sauce", text="Melt the butter with the miso."),
+        ],
         images=DraftImages(hero="hero.webp", card="card.webp", hero_alt="A bowl of noodles"),
         sections=[
             IngredientSection(
@@ -39,7 +43,9 @@ def case_full_draft() -> RecipeDraft:
 
 
 def case_minimal_draft() -> RecipeDraft:
-    return RecipeDraft(slug="toast", title="Toast", steps=["Toast the bread."])
+    return RecipeDraft(
+        slug="toast", title="Toast", steps=[Step(title="Toast", text="Toast the bread.")]
+    )
 
 
 @parametrize_with_cases("draft", cases=".")
@@ -52,7 +58,7 @@ def test_from_toml_reads_pairs_and_tables_as_ingredient_lines() -> None:
         """
         slug = "pancakes"
         title = "Pancakes"
-        steps = ["Whisk.", "Fry."]
+        steps = [{ title = "Batter", text = "Whisk." }]
 
         [[sections]]
         items = [["2", "eggs"], { quantity = "1 cup", item = "plain flour", grams = 125 }]
@@ -73,7 +79,7 @@ def test_to_toml_writes_ingredients_without_override_as_pairs() -> None:
     draft = RecipeDraft(
         slug="pancakes",
         title="Pancakes",
-        steps=["Whisk."],
+        steps=[Step(title="Batter", text="Whisk.")],
         sections=[IngredientSection(items=[IngredientLine(quantity="2", item="eggs")])],
     )
 
@@ -83,7 +89,7 @@ def test_to_toml_writes_ingredients_without_override_as_pairs() -> None:
         'measure_system = "uk"\n'
         "tags = []\n"
         "steps = [\n"
-        '    "Whisk.",\n'
+        '    { title = "Batter", text = "Whisk." },\n'
         "]\n"
         "\n"
         "[[sections]]\n"
@@ -97,13 +103,25 @@ def test_to_toml_writes_ingredients_without_override_as_pairs() -> None:
 
 
 def test_total_defaults_to_the_sum_of_given_times() -> None:
-    draft = RecipeDraft(slug="bread", title="Bread", steps=["Bake."], prep_min=20, rest_min=60)
+    draft = RecipeDraft(
+        slug="bread",
+        title="Bread",
+        steps=[Step(title="Bake", text="Bake.")],
+        prep_min=20,
+        rest_min=60,
+    )
 
     assert draft.total_min == 80
 
 
 def test_explicit_total_is_kept() -> None:
-    draft = RecipeDraft(slug="bread", title="Bread", steps=["Bake."], prep_min=20, total_min=95)
+    draft = RecipeDraft(
+        slug="bread",
+        title="Bread",
+        steps=[Step(title="Bake", text="Bake.")],
+        prep_min=20,
+        total_min=95,
+    )
 
     assert draft.total_min == 95
 
@@ -112,16 +130,30 @@ def test_tags_are_lowercased_and_deduplicated_in_order() -> None:
     draft = RecipeDraft(
         slug="dal",
         title="Dal",
-        steps=["Cook."],
+        steps=[Step(title="Cook", text="Cook.")],
         tags=["Indian", " quick ", "indian", "", "Side  Dish"],
     )
 
     assert draft.tags == ["indian", "quick", "side dish"]
 
 
-def test_blank_step_is_rejected() -> None:
-    with pytest.raises(pydantic.ValidationError, match="steps must not be empty"):
-        RecipeDraft(slug="dal", title="Dal", steps=["Cook.", "   "])
+def test_step_title_and_text_are_stripped() -> None:
+    assert Step(title="  Fry ", text=" Fry the onions.\n") == Step(
+        title="Fry", text="Fry the onions."
+    )
+
+
+@pytest.mark.parametrize(
+    ("step", "blank_field"),
+    [
+        ({"title": "   ", "text": "Cook."}, "title"),
+        ({"title": "Cook", "text": ""}, "text"),
+        ({"text": "Cook."}, "title"),
+    ],
+)
+def test_a_step_without_a_title_or_text_is_rejected(step: dict[str, str], blank_field: str) -> None:
+    with pytest.raises(pydantic.ValidationError, match=rf"steps\.0\.{blank_field}\n"):
+        RecipeDraft.model_validate({"slug": "dal", "title": "Dal", "steps": [step]})
 
 
 @pytest.mark.parametrize(

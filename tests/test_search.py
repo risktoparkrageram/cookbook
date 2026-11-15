@@ -19,9 +19,9 @@ def soup_id(database: sqlite3.Connection) -> int:
             (1, 2, '1 l', 'vegetable stock'),
             (1, 1, '200 g', 'red lentils'),
             (2, 1, '', 'crème fraîche');
-        INSERT INTO steps (recipe_id, position, text) VALUES
-            (7, 2, 'Simmer for 20 minutes.'),
-            (7, 1, 'Rinse the lentils.');
+        INSERT INTO steps (recipe_id, position, title, text) VALUES
+            (7, 2, 'Simmer', 'Simmer for 20 minutes.'),
+            (7, 1, 'Rinse', 'Rinse the lentils.');
         INSERT INTO tags (id, name) VALUES (1, 'vegetarian'), (2, 'quick');
         INSERT INTO recipe_tags (recipe_id, tag_id) VALUES (7, 1), (7, 2);
         """
@@ -47,7 +47,7 @@ def test_refresh_writes_every_column_in_recipe_order(
         "title": "Lentil Soup",
         "source": "Allotment Weekly Ada Example",
         "ingredients": "200 g red lentils\n1 l vegetable stock\nTo serve\ncrème fraîche",
-        "steps": "Rinse the lentils.\nSimmer for 20 minutes.",
+        "steps": "Rinse\nRinse the lentils.\nSimmer\nSimmer for 20 minutes.",
         "tags": "quick vegetarian",
         "notes": "Add extra chilli",
     }

@@ -54,6 +54,7 @@ CREATE TABLE steps (
     id        INTEGER PRIMARY KEY,
     recipe_id INTEGER NOT NULL REFERENCES recipes (id) ON DELETE CASCADE,
     position  INTEGER NOT NULL,
+    title     TEXT NOT NULL CHECK (length(title) > 0),
     text      TEXT NOT NULL,
     UNIQUE (recipe_id, position)
 );

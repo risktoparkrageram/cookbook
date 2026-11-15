@@ -48,9 +48,9 @@ def refresh(connection: sqlite3.Connection, recipe_id: int) -> None:
         ingredient_lines.append(f"{quantity} {item}".strip())
 
     steps = [
-        text
-        for (text,) in connection.execute(
-            "SELECT text FROM steps WHERE recipe_id = ? ORDER BY position", (recipe_id,)
+        f"{step_title}\n{step_text}"
+        for step_title, step_text in connection.execute(
+            "SELECT title, text FROM steps WHERE recipe_id = ? ORDER BY position", (recipe_id,)
         )
     ]
     tags = [
