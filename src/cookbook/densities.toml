@@ -1,0 +1,28 @@
+# Grams per millilitre, for showing a volume ("1 cup plain flour") in grams. An ingredient
+# matches a name when its first clause ("unsalted butter, softened" -> "unsalted butter")
+# is the name or ends with it, so "rice" matches "basmati rice" but not "rice vinegar".
+# Volumes of anything not listed are shown in millilitres.
+
+"plain flour" = 0.53
+"all-purpose flour" = 0.53
+"self-raising flour" = 0.53
+"bread flour" = 0.54
+"flour" = 0.53
+"cornflour" = 0.51
+"cornstarch" = 0.51
+"cocoa powder" = 0.42
+"caster sugar" = 0.85
+"granulated sugar" = 0.85
+"sugar" = 0.85
+"brown sugar" = 0.93
+"icing sugar" = 0.5
+"powdered sugar" = 0.5
+"butter" = 0.96
+"rice" = 0.8
+"oats" = 0.38
+"honey" = 1.42
+"golden syrup" = 1.4
+"maple syrup" = 1.32
+"parmesan" = 0.42
+"cheese" = 0.47
+"ground almonds" = 0.4
