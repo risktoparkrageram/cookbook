@@ -54,6 +54,7 @@ COOKBOOK_DB_PATH=path/to/recipes.db COOKBOOK_SECRET_KEY=$(openssl rand -hex 32) 
 | `src/cookbook/static/htmx.min.js` | [htmx](https://htmx.org) 2.0.4, vendored release build (BSD-0) |
 | `src/cookbook/passwords.py` | Hashes and verifies the admin password (scrypt) |
 | `src/cookbook/cli.py` | The `cookbook` command: `migrate` and `backup` |
+| `deploy/` | systemd units for the app, mDNS and nightly backups; host specifics stay in the git-ignored `host.env` and `local/` |
 | `src/cookbook/settings.py` | Configuration from `COOKBOOK_*` environment variables |
 
 ## Configuration
@@ -72,3 +73,44 @@ COOKBOOK_DB_PATH=path/to/recipes.db COOKBOOK_SECRET_KEY=$(openssl rand -hex 32) 
 |---|---|
 | `cookbook migrate --db PATH` | Copy the database to `PATH.bak`, then apply pending migrations |
 | `cookbook backup --db PATH --to DIR [--keep 30]` | Copy the database into `DIR` as `recipes-<UTC time>.db`, checked with SQLite's integrity check, keeping the newest 30. `DIR` must exist, so an unmounted backup disk fails the run instead of filling the disk underneath |
+
+## Deploying
+
+The app runs on a small Linux host on the home network (such as a Raspberry Pi) under
+systemd, as an unprivileged `cookbook` user, from `/srv/cookbook`. The unit files are in
+`deploy/`; anything specific to one host goes in `deploy/host.env` and `deploy/local/`,
+which are git-ignored.
+
+First install, on the host:
+
+```bash
+sudo apt install avahi-utils
+sudo adduser --system --group --no-create-home cookbook
+sudo install -d -o <user> /srv/cookbook /srv/cookbook/python
+sudo install -d -o cookbook -g cookbook -m 0700 /srv/cookbook/data
+git clone https://github.com/<owner>/cookbook /srv/cookbook/cookbook
+cd /srv/cookbook/cookbook
+# Python outside /home: the service's ProtectHome would hide it
+UV_PYTHON_INSTALL_DIR=/srv/cookbook/python uv sync --frozen --no-dev --compile-bytecode
+```
+
+Then the environment files under `/etc/cookbook/`, readable by root only:
+
+| File | Holds |
+|---|---|
+| `cookbook.env` | `COOKBOOK_DB_PATH=/srv/cookbook/data/recipes.db`, `COOKBOOK_SECRET_KEY=` (`openssl rand -hex 32`) |
+| `mdns.env` | `COOKBOOK_MDNS_ADDRESS=` the host's reserved address |
+| `backup.env` | `COOKBOOK_DB_PATH` as above, `COOKBOOK_BACKUP_DIR=` an existing directory, ideally on another disk |
+
+Copy `deploy/*.service` and `deploy/*.timer` to `/etc/systemd/system/`, plus any
+drop-ins from `deploy/local/`, then `sudo systemctl daemon-reload` and
+`sudo systemctl enable --now cookbook cookbook-mdns cookbook-backup.timer`.
+
+The database arrives once, before anyone writes a note; afterwards recipes only come in
+through recipe-db's import. Bring it to the current schema as the `cookbook` user:
+`sudo -u cookbook /srv/cookbook/cookbook/.venv/bin/cookbook migrate --db /srv/cookbook/data/recipes.db`.
+The one account is created with recipe-db's `set-password`.
+
+Updates: `git pull --ff-only`, `uv sync --frozen --no-dev` (with the same
+`UV_PYTHON_INSTALL_DIR`), `cookbook migrate` as above, `sudo systemctl restart cookbook`,
+then check `http://cookbook.local/healthz`.

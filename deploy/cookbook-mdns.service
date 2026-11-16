@@ -1,0 +1,24 @@
+# Announces cookbook.local on the home network, pointing at this host's address.
+# Needs avahi-daemon and avahi-utils. Phones that don't resolve .local names need a
+# DNS record for cookbook.local instead.
+
+[Unit]
+Description=Announce cookbook.local over mDNS
+After=avahi-daemon.service network-online.target
+Requires=avahi-daemon.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+# COOKBOOK_MDNS_ADDRESS: this host's reserved address (see README.md)
+EnvironmentFile=/etc/cookbook/mdns.env
+ExecStart=/usr/bin/avahi-publish --address --no-reverse cookbook.local ${COOKBOOK_MDNS_ADDRESS}
+Restart=always
+RestartSec=10
+DynamicUser=yes
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+
+[Install]
+WantedBy=multi-user.target

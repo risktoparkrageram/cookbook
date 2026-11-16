@@ -1,0 +1,11 @@
+# Runs cookbook-backup.service at 03:30 every night, or at the next boot if it was missed.
+
+[Unit]
+Description=Back up the cookbook database nightly
+
+[Timer]
+OnCalendar=*-*-* 03:30:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,18 @@
+# Nightly copy of the cookbook database (cookbook-backup.timer starts it). Runs as root
+# so the backup directory can stay root-only; the directory must already exist, so an
+# unmounted backup disk makes the run fail instead of filling the disk underneath.
+
+[Unit]
+Description=Back up the cookbook database
+
+[Service]
+Type=oneshot
+# COOKBOOK_DB_PATH and COOKBOOK_BACKUP_DIR (see README.md)
+EnvironmentFile=/etc/cookbook/backup.env
+ExecStart=/srv/cookbook/cookbook/.venv/bin/cookbook backup --db ${COOKBOOK_DB_PATH} --to ${COOKBOOK_BACKUP_DIR} --keep 30
+Nice=10
+IOSchedulingClass=idle
+NoNewPrivileges=yes
+ProtectSystem=full
+PrivateTmp=yes
+PrivateDevices=yes
