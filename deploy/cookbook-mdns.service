@@ -15,7 +15,10 @@ EnvironmentFile=/etc/cookbook/mdns.env
 ExecStart=/usr/bin/avahi-publish --address --no-reverse cookbook.local ${COOKBOOK_MDNS_ADDRESS}
 Restart=always
 RestartSec=10
-DynamicUser=yes
+# A named user, not DynamicUser: avahi-publish talks to avahi-daemon over D-Bus, which
+# can't resolve a dynamic user's uid on hosts whose nsswitch.conf lacks systemd.
+User=cookbook
+Group=cookbook
 NoNewPrivileges=yes
 ProtectSystem=strict
 ProtectHome=yes
