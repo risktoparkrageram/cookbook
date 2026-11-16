@@ -11,11 +11,11 @@ def test_recipe_cards_keep_the_given_order_with_kicker_and_card(
     """The rarer cuisine wins the kicker and a course tag replaces Main."""
     cards = queries.recipe_cards(recipes, [1, 3, 4, 2])
 
-    assert [(card.slug, card.kicker, card.total_min) for card in cards] == [
-        ("tofu_rice_bowl", "Korean · Main", 140),
-        ("almond_biscuits", "Dessert", 32),
-        ("old_turnip_stew", "Asian · Main", None),
-        ("chilli_oil_noodles", "Asian · Main", 10),
+    assert [(card.slug, card.kicker, card.total_min, card.cooked) for card in cards] == [
+        ("tofu_rice_bowl", "Korean · Main", 140, False),
+        ("almond_biscuits", "Dessert", 32, True),
+        ("old_turnip_stew", "Asian · Main", None, False),
+        ("chilli_oil_noodles", "Asian · Main", 10, False),
     ]
     assert cards[0].card == ImageLink(
         url="/images/6-01234567.webp", width=600, height=450, alt="A bowl of tofu", credit=None

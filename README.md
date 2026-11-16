@@ -5,7 +5,8 @@ Recipes live in one SQLite database; this repository holds only the code: no rec
 
 Status: early. Browsing and search work: full-text search with filters (tags, source,
 ingredient, times, serves, notes), recipe, tag, source and notes pages, images and a JSON
-API. Anyone can read notes; a signed-in user adds, edits and deletes them. Any recipe exports
+API. Anyone can read notes; a signed-in user adds, edits and deletes them, and ticks the
+recipes they have cooked, which then show as Cooked rather than New (and can be filtered). Any recipe exports
 as an A4 PDF (with or without notes) or as a zipped draft folder; signed-in users can
 download every recipe as one zip. In the kitchen, ingredients and steps tick off, the
 current step is marked, the quantities scale with the serves and switch to metric, and the

@@ -160,13 +160,13 @@ def test_font_is_cached_for_a_year_and_css_revalidates(client: TestClient) -> No
 
 
 def test_healthz_reports_the_schema_version(client: TestClient) -> None:
-    assert client.get("/healthz").json() == {"status": "ok", "schema_version": 2}
+    assert client.get("/healthz").json() == {"status": "ok", "schema_version": 3}
 
 
 def test_app_refuses_to_start_on_an_unmigrated_database(tmp_path: Path) -> None:
     settings = Settings(db_path=tmp_path / "empty.db", secret_key="s" * 32)
 
-    with pytest.raises(RuntimeError, match="schema version 0, this code expects 2"):
+    with pytest.raises(RuntimeError, match="schema version 0, this code expects 3"):
         create_app(settings)
 
 
@@ -174,12 +174,12 @@ def test_app_migrates_at_start_when_asked(tmp_path: Path) -> None:
     settings = Settings(db_path=tmp_path / "empty.db", secret_key="s" * 32, migrate=True)
 
     with TestClient(create_app(settings)) as client:
-        assert client.get("/healthz").json() == {"status": "ok", "schema_version": 2}
+        assert client.get("/healthz").json() == {"status": "ok", "schema_version": 3}
 
 
 def test_search_page_renders_results_and_filter_state(client: TestClient) -> None:
     """A full page for a plain request, with the chosen tag ticked and blank fields ignored."""
-    response = client.get("/?q=tofu&tag=asian&max_total=&sort=&publication=")
+    response = client.get("/?q=tofu&tag=asian&cooked=no&max_total=&sort=&publication=")
 
     assert response.status_code == 200
     assert response.text.startswith("<!doctype html>")
@@ -189,7 +189,7 @@ def test_search_page_renders_results_and_filter_state(client: TestClient) -> Non
     ]
     assert '<input type="checkbox" name="tag" value="asian" checked>' in response.text
     assert (
-        '<button type="button" class="filters-button label" data-opens="filters">Filters (1)'
+        '<button type="button" class="filters-button label" data-opens="filters">Filters (2)'
         in (response.text)
     )
     assert response.headers["vary"] == "HX-Request, Cookie"

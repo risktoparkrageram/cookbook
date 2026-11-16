@@ -1,0 +1,8 @@
+{% if user %}
+<form class="cooked" method="post" action="/recipes/{{ slug }}/cooked" hx-post="/recipes/{{ slug }}/cooked" hx-swap="outerHTML">
+  <input type="hidden" name="cooked" value="{{ 'false' if cooked else 'true' }}">
+  <button class="cooked-tick" aria-pressed="{{ 'true' if cooked else 'false' }}">Cooked</button>
+</form>
+{% elif cooked %}
+<p class="cooked"><span class="cooked-tick" aria-pressed="true">Cooked</span></p>
+{% endif %}

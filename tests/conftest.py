@@ -33,7 +33,7 @@ def recipes(database: sqlite3.Connection) -> sqlite3.Connection:
     cuisine; rows go in out of title and position order so a missing ORDER BY shows.
     "tofu" is the bowl's title, tag and ingredient but only in a step of the noodles, so
     ranking and the ingredient filter each tell the two apart. The bowl's hero is a real
-    4 × 3 WebP, so a PDF can decode it.
+    4 × 3 WebP, so a PDF can decode it. Only the biscuits are marked cooked.
     """
     database.executescript(
         """
@@ -82,6 +82,7 @@ def recipes(database: sqlite3.Connection) -> sqlite3.Connection:
             (1, 1, NULL, 'Double the sauce', '2026-01-02 10:00:00', '2026-01-02 10:00:00'),
             (2, 1, 2, 'Use a cast iron pan', '2026-01-03 10:00:00', '2026-01-03 10:00:00'),
             (3, 3, NULL, 'Freezes well', '2026-01-01 10:00:00', '2026-01-04 10:00:00');
+        INSERT INTO cooked_recipes (recipe_id) VALUES (3);
         """
     )
     for recipe_id in range(1, 5):

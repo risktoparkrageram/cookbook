@@ -18,8 +18,9 @@ def test_migrate_creates_every_table_on_an_empty_database(tmp_path: Path) -> Non
             " WHERE type = 'table' AND name NOT LIKE 'recipe_search_%' ORDER BY name"
         )
     ]
-    assert version == 2
+    assert version == 3
     assert tables == [
+        "cooked_recipes",
         "images",
         "ingredient_sections",
         "ingredients",
@@ -37,7 +38,7 @@ def test_migrate_creates_every_table_on_an_empty_database(tmp_path: Path) -> Non
 def test_migrate_twice_changes_nothing(database: sqlite3.Connection) -> None:
     database.execute("INSERT INTO sources (publication) VALUES ('Allotment Weekly')")
 
-    assert schema.migrate(database) == 2
+    assert schema.migrate(database) == 3
     assert database.execute("SELECT count(*) FROM sources").fetchone()[0] == 1
 
 

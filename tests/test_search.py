@@ -308,6 +308,16 @@ def case_find_most_recently_edited_note_first() -> FindCase:
     return SearchFilters(sort="noted"), ["almond_biscuits", "tofu_rice_bowl", "chilli_oil_noodles"]
 
 
+@case(tags="find")
+def case_find_cooked() -> FindCase:
+    return SearchFilters(cooked="yes"), ["almond_biscuits"]
+
+
+@case(tags="find")
+def case_find_not_cooked_yet() -> FindCase:
+    return SearchFilters(cooked="no"), ["chilli_oil_noodles", "tofu_rice_bowl"]
+
+
 @parametrize_with_cases("filters, slugs", cases=".", has_tag="find")
 def test_find(recipes: sqlite3.Connection, filters: SearchFilters, slugs: list[str]) -> None:
     found = search.find(recipes, filters)

@@ -30,6 +30,7 @@
       {% endfor %}
     </dl>
     {% endif %}
+    {% with slug=recipe.slug, cooked=recipe.cooked %}{% include "_cooked.html" %}{% endwith %}
     {% if recipe.tags %}
     <div class="tags">
       {% for tag in recipe.tags %}<a class="tag" href="/tags/{{ tag.name|urlencode }}">{{ tag.name }}</a>{% endfor %}

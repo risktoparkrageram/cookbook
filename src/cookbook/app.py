@@ -7,7 +7,7 @@ from starlette.responses import Response
 from starlette.types import Scope
 
 from cookbook import auth, db
-from cookbook.routes import api, export, notes, pages
+from cookbook.routes import api, cooked, export, notes, pages
 from cookbook.routes import auth as auth_routes
 from cookbook.settings import Settings
 from cookbook.web import PACKAGE_DIR, signed_in_user
@@ -71,6 +71,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.mount("/static", StaticAssets(directory=PACKAGE_DIR / "static"), name="static")
     app.include_router(pages.router)
     app.include_router(notes.router)
+    app.include_router(cooked.router)
     app.include_router(export.router)
     app.include_router(auth_routes.router)
     app.include_router(api.router)

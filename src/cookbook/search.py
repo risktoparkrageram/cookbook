@@ -27,7 +27,8 @@ class SearchFilters(BaseModel):
     A search as it appears in the query string of the home page.
 
     Every tag must be on a recipe. Time and serves limits include their bounds; a recipe
-    without the time or serves never matches a limit on it. sort defaults to relevance when
+    without the time or serves never matches a limit on it. cooked is "yes" for recipes
+    marked cooked, "no" for those not cooked yet. sort defaults to relevance when
     there is a query, else title.
     """
 
@@ -44,6 +45,7 @@ class SearchFilters(BaseModel):
     serves_from: OptionalCount = None
     serves_to: OptionalCount = None
     has_notes: bool = False
+    cooked: Annotated[Literal["yes", "no"] | None, BeforeValidator(blank_to_none)] = None
     archived: bool = False
     sort: Annotated[Sort | None, BeforeValidator(blank_to_none)] = None
 
@@ -58,6 +60,7 @@ class SearchFilters(BaseModel):
             self.max_prep,
             self.serves_from,
             self.serves_to,
+            self.cooked,
         ]
         flags = [self.has_notes, self.archived]
         return len(self.tag) + sum(value is not None for value in values) + sum(flags)
@@ -139,6 +142,9 @@ def find(connection: sqlite3.Connection, filters: SearchFilters) -> list[int]:
           AND (:serves_to IS NULL OR recipes.serves_min <= :serves_to)
           AND (NOT :has_notes
                OR EXISTS (SELECT 1 FROM recipe_notes WHERE recipe_id = recipes.id))
+          AND (:cooked IS NULL
+               OR EXISTS (SELECT 1 FROM cooked_recipes WHERE recipe_id = recipes.id)
+                  = (:cooked = 'yes'))
         ORDER BY {ORDER_BY[sort]}
         """,
         {
@@ -154,6 +160,7 @@ def find(connection: sqlite3.Connection, filters: SearchFilters) -> list[int]:
             "serves_from": filters.serves_from,
             "serves_to": filters.serves_to,
             "has_notes": filters.has_notes,
+            "cooked": filters.cooked,
         },
     ).fetchall()
     return [recipe_id for (recipe_id,) in rows]

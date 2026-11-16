@@ -58,6 +58,7 @@ class RecipeCard(BaseModel):
     kicker: str
     total_min: int | None
     card: ImageLink | None
+    cooked: bool
 
 
 class Ingredient(BaseModel):
@@ -131,6 +132,7 @@ class Recipe(BaseModel):
     total_min: int | None
     intro: str | None
     archived: bool
+    cooked: bool
     tags: list[Tag]
     hero: ImageLink | None
     sections: list[IngredientSection]
@@ -236,6 +238,7 @@ def recipe_cards(connection: sqlite3.Connection, recipe_ids: list[int]) -> list[
     rows = connection.execute(
         f"""
         SELECT recipes.id AS recipe_id, recipes.slug, recipes.title, recipes.total_min,
+               EXISTS (SELECT 1 FROM cooked_recipes WHERE recipe_id = recipes.id) AS cooked,
                {IMAGE_COLUMNS}
         FROM json_each(?) AS results
         JOIN recipes ON recipes.id = results.value
@@ -251,6 +254,7 @@ def recipe_cards(connection: sqlite3.Connection, recipe_ids: list[int]) -> list[
             kicker=recipe_kickers[row["recipe_id"]],
             total_min=row["total_min"],
             card=image_link(row) if row["id"] is not None else None,
+            cooked=bool(row["cooked"]),
         )
         for row in rows
     ]
@@ -260,7 +264,8 @@ def recipe(connection: sqlite3.Connection, slug: str) -> Recipe | None:
     """Read one recipe by slug, archived or not, with its ingredients, steps and notes."""
     row = connection.execute(
         """
-        SELECT recipes.*, sources.publication, sources.author
+        SELECT recipes.*, sources.publication, sources.author,
+               EXISTS (SELECT 1 FROM cooked_recipes WHERE recipe_id = recipes.id) AS cooked
         FROM recipes LEFT JOIN sources ON sources.id = recipes.source_id
         WHERE recipes.slug = ?
         """,
@@ -377,6 +382,7 @@ def recipe(connection: sqlite3.Connection, slug: str) -> Recipe | None:
         total_min=row["total_min"],
         intro=row["intro"],
         archived=bool(row["archived"]),
+        cooked=bool(row["cooked"]),
         tags=tags,
         hero=image_link(hero) if hero is not None else None,
         sections=sections,

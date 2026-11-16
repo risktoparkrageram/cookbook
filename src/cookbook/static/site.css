@@ -5,7 +5,6 @@
   font-display: swap;
   src: url("/static/fonts/InterVariable.woff2") format("woff2");
 }
-
 @font-face {
   font-family: "Inter";
   font-style: italic;
@@ -108,7 +107,17 @@ ul.cards, ul.rows, ul.tag-list { list-style: none; margin: 0; padding: 0; }
 .card img, .card .no-image { display: block; width: 112px; height: 84px; object-fit: cover; background: var(--hair); }
 .card-text { display: flex; flex-direction: column; gap: 4px; }
 .card-title { font-size: 20px; font-weight: 700; line-height: 1.1; letter-spacing: -.02em; }
+.card-meta { display: flex; gap: 10px; align-items: baseline; }
 .card-time { color: var(--grey); font-size: 15px; }
+.status { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--grey); }
+.status.cooked { color: var(--accent); }
+.status.cooked::before, .cooked-tick[aria-pressed=true]::before { content: "✓ "; }
+.cooked { grid-column: 1 / -1; margin: 18px 0 0; }
+.cooked-tick { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font-size: 11px;
+  font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--grey); }
+button.cooked-tick::before { content: ""; width: 18px; height: 18px; border: 1.5px solid var(--ink); }
+button.cooked-tick[aria-pressed=true] { color: var(--accent); }
+button.cooked-tick[aria-pressed=true]::before { content: ""; background: var(--accent); border-color: var(--accent); }
 
 .group h2 { margin: 28px 0 0; padding-bottom: 6px; border-bottom: 1px solid var(--rule); color: var(--accent); }
 .tag-list { display: flex; flex-wrap: wrap; gap: 0 18px; padding-top: 6px; }
