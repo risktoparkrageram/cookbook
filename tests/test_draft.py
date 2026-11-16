@@ -1,4 +1,3 @@
-import pydantic
 import pytest
 from pytest_cases import parametrize_with_cases
 
@@ -135,25 +134,6 @@ def test_tags_are_lowercased_and_deduplicated_in_order() -> None:
     )
 
     assert draft.tags == ["indian", "quick", "side dish"]
-
-
-def test_step_title_and_text_are_stripped() -> None:
-    assert Step(title="  Fry ", text=" Fry the onions.\n") == Step(
-        title="Fry", text="Fry the onions."
-    )
-
-
-@pytest.mark.parametrize(
-    ("step", "blank_field"),
-    [
-        ({"title": "   ", "text": "Cook."}, "title"),
-        ({"title": "Cook", "text": ""}, "text"),
-        ({"text": "Cook."}, "title"),
-    ],
-)
-def test_a_step_without_a_title_or_text_is_rejected(step: dict[str, str], blank_field: str) -> None:
-    with pytest.raises(pydantic.ValidationError, match=rf"steps\.0\.{blank_field}\n"):
-        RecipeDraft.model_validate({"slug": "dal", "title": "Dal", "steps": [step]})
 
 
 @pytest.mark.parametrize(

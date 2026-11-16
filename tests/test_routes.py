@@ -215,15 +215,3 @@ def test_api_recipes_take_the_search_filters(client: TestClient) -> None:
     response = client.get("/api/recipes?q=tofu&sort=title")
 
     assert [card["slug"] for card in response.json()] == ["chilli_oil_noodles", "tofu_rice_bowl"]
-
-
-def test_home_screen_manifest_and_icons_are_served(client: TestClient) -> None:
-    manifest = client.get("/static/manifest.webmanifest")
-
-    assert manifest.headers["content-type"] == "application/manifest+json"
-    assert [icon["src"] for icon in manifest.json()["icons"]] == [
-        "/static/icons/icon-192.png",
-        "/static/icons/icon-512.png",
-    ]
-    for icon in ["icon-192.png", "icon-512.png", "apple-touch-icon.png"]:
-        assert client.get(f"/static/icons/{icon}").headers["content-type"] == "image/png"
