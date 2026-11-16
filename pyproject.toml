@@ -24,6 +24,7 @@ build-backend = "uv_build"
 dev = [
     "httpx2>=2.16.0",
     "mypy>=1.15",
+    "playwright>=1.65.2",
     "pypdf>=7.1.0",
     "pytest<9",
     "pytest-cases>=3.10",
@@ -52,3 +53,5 @@ plugins = ["pydantic.mypy"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+addopts = "-m 'not smoke'"
+markers = ["smoke: drives the running app in a phone-sized Chromium (scripts/lint-and-test.sh runs them)"]
