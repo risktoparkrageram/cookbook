@@ -171,3 +171,66 @@ def test_pdf_can_leave_the_notes_out(client: TestClient) -> None:
     assert "Fry until golden." in text
     assert "Double the sauce" not in text
     assert "Use a cast iron pan" not in text
+
+
+def test_every_recipe_column_is_exported_or_deliberately_left_out(
+    database: sqlite3.Connection,
+) -> None:
+    """
+    A new column in a recipe table fails this test until the draft export decides on it.
+
+    The recipe page and the draft export read these tables separately; the round trip
+    test proves the exported columns arrive, and this test makes a column that is in
+    neither list impossible to miss. Left out: ids and positions (the draft's order
+    holds them), values recipe-db's import works out again (serves numbers, parsed
+    amounts, image size and hash), tag kinds (recipe-db's tag vocabulary holds them),
+    and the archived flag and timestamps (the all-recipes zip lists the archived).
+    """
+    exported = {
+        "sources": {"publication", "author"},
+        "recipes": {
+            "slug",
+            "title",
+            "url",
+            "archive_url",
+            "measure_system",
+            "serves_text",
+            "prep_min",
+            "cook_min",
+            "rest_min",
+            "total_min",
+            "intro",
+        },
+        "ingredient_sections": {"name"},
+        "ingredients": {"quantity", "item", "grams_override"},
+        "steps": {"title", "text"},
+        "tags": {"name"},
+        "recipe_tags": set(),
+        "images": {"role", "data", "alt", "credit", "origin"},
+    }
+    left_out = {
+        "sources": {"id"},
+        "recipes": {
+            "id",
+            "source_id",
+            "serves_min",
+            "serves_max",
+            "yield_unit",
+            "archived",
+            "created_at",
+            "updated_at",
+        },
+        "ingredient_sections": {"id", "recipe_id", "position"},
+        "ingredients": {"id", "section_id", "position", "amount_min", "amount_max", "unit"},
+        "steps": {"id", "recipe_id", "position"},
+        "tags": {"id", "kind"},
+        "recipe_tags": {"recipe_id", "tag_id"},
+        "images": {"id", "recipe_id", "content_type", "sha256", "width", "height"},
+    }
+
+    columns = {
+        table: {row["name"] for row in database.execute(f"PRAGMA table_info({table})")}
+        for table in exported
+    }
+
+    assert columns == {table: exported[table] | left_out[table] for table in exported}
