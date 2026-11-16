@@ -53,6 +53,7 @@ COOKBOOK_DB_PATH=path/to/recipes.db COOKBOOK_SECRET_KEY=$(openssl rand -hex 32) 
 | `src/cookbook/fonts/` | Inter TrueType subsets for the PDF (SIL OFL, `OFL.txt`) |
 | `src/cookbook/static/htmx.min.js` | [htmx](https://htmx.org) 2.0.4, vendored release build (BSD-0) |
 | `src/cookbook/passwords.py` | Hashes and verifies the admin password (scrypt) |
+| `src/cookbook/cli.py` | The `cookbook` command: `migrate` and `backup` |
 | `src/cookbook/settings.py` | Configuration from `COOKBOOK_*` environment variables |
 
 ## Configuration
@@ -64,3 +65,10 @@ COOKBOOK_DB_PATH=path/to/recipes.db COOKBOOK_SECRET_KEY=$(openssl rand -hex 32) 
 | `COOKBOOK_HOST`, `COOKBOOK_PORT` | Listen address, default `127.0.0.1:8000` |
 | `COOKBOOK_MIGRATE` | Apply pending migrations at startup, default off |
 | `COOKBOOK_FAILED_LOGIN_DELAY_S` | Seconds a failed sign-in waits before answering, default 1 |
+
+## Command line
+
+| Command | |
+|---|---|
+| `cookbook migrate --db PATH` | Copy the database to `PATH.bak`, then apply pending migrations |
+| `cookbook backup --db PATH --to DIR [--keep 30]` | Copy the database into `DIR` as `recipes-<UTC time>.db`, checked with SQLite's integrity check, keeping the newest 30. `DIR` must exist, so an unmounted backup disk fails the run instead of filling the disk underneath |
