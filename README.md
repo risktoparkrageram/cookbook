@@ -54,7 +54,7 @@ COOKBOOK_DB_PATH=path/to/recipes.db COOKBOOK_SECRET_KEY=$(openssl rand -hex 32) 
 | `src/cookbook/static/htmx.min.js` | [htmx](https://htmx.org) 2.0.4, vendored release build (BSD-0) |
 | `src/cookbook/passwords.py` | Hashes and verifies the admin password (scrypt) |
 | `src/cookbook/cli.py` | The `cookbook` command: `migrate` and `backup` |
-| `deploy/` | systemd units for the app, mDNS and nightly backups; host specifics stay in the git-ignored `host.env` and `local/` |
+| `deploy/` | systemd units for the app, mDNS and nightly backups, and `deploy.sh` for updates; host specifics stay in the git-ignored `host.env` and `local/` |
 | `src/cookbook/settings.py` | Configuration from `COOKBOOK_*` environment variables |
 
 ## Configuration
@@ -111,6 +111,8 @@ through recipe-db's import. Bring it to the current schema as the `cookbook` use
 `sudo -u cookbook /srv/cookbook/cookbook/.venv/bin/cookbook migrate --db /srv/cookbook/data/recipes.db`.
 The one account is created with recipe-db's `set-password`.
 
-Updates: `git pull --ff-only`, `uv sync --frozen --no-dev` (with the same
-`UV_PYTHON_INSTALL_DIR`), `cookbook migrate` as above, `sudo systemctl restart cookbook`,
-then check `http://cookbook.local/healthz`.
+Updates: push `main`, then run `deploy/deploy.sh` from the laptop. It refuses unless the
+checkout is clean and level with `origin/main`; on the host it pulls, runs
+`uv sync --frozen --no-dev`, `cookbook migrate` (which backs the database up first),
+installs any changed unit files, restarts the app and checks `/healthz`. The host and
+user come from `deploy/host.env`.
