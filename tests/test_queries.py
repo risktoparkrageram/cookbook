@@ -62,11 +62,18 @@ def test_tag_counts_count_the_given_recipes_grouped_by_kind(
     recipes: sqlite3.Connection,
 ) -> None:
     """
-    Tags of recipes outside the results stay listed with 0.
+    Tags of recipes outside the results stay listed with 0; tags only archived recipes have
+    are left out.
 
-    The archived stew (4) also has asian and quick, so counting all recipes would show 3
-    and 2.
+    The stew (4) is archived: its turnip tag is on no other recipe.
     """
+    recipes.executescript(
+        """
+        INSERT INTO tags (id, name, kind) VALUES (7, 'turnip', 'ingredient');
+        INSERT INTO recipe_tags (recipe_id, tag_id) VALUES (4, 7);
+        """
+    )
+
     groups = queries.tag_counts(recipes, [1, 2])
 
     assert groups == {

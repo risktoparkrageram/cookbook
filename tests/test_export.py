@@ -16,8 +16,18 @@ HERO_WEBP = bytes.fromhex(
 def test_recipe_zip_round_trips_through_the_draft_format(
     client: TestClient, recipes: sqlite3.Connection
 ) -> None:
-    """The draft read back from the zip holds every field the database has for the recipe."""
-    recipes.execute("UPDATE ingredients SET grams_override = 21 WHERE item = 'soy sauce'")
+    """
+    The draft read back from the zip holds every field the database has for the recipe.
+
+    The aubergine tag sorts first by name but comes after the cuisines by kind.
+    """
+    recipes.executescript(
+        """
+        UPDATE ingredients SET grams_override = 21 WHERE item = 'soy sauce';
+        INSERT INTO tags (id, name, kind) VALUES (7, 'aubergine', 'ingredient');
+        INSERT INTO recipe_tags (recipe_id, tag_id) VALUES (1, 7);
+        """
+    )
 
     response = client.get("/recipes/tofu_rice_bowl/export.zip")
 
@@ -43,7 +53,7 @@ def test_recipe_zip_round_trips_through_the_draft_format(
         prep_min=15,
         cook_min=125,
         total_min=140,
-        tags=["asian", "korean", "tofu"],
+        tags=["asian", "korean", "aubergine", "tofu"],
         steps=[
             Step(title="Press the tofu", text="Press for 10 minutes."),
             Step(title="Fry the tofu", text="Fry until golden."),
