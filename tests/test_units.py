@@ -448,6 +448,13 @@ def case_text_fahrenheit_before_celsius_is_dropped_with_its_separator() -> TextC
 
 
 @case(tags="text")
+def case_text_celsius_without_a_degree_sign_still_drops_fahrenheit() -> TextCase:
+    return "a 180C (160C fan)/350F/gas mark 4 oven", [
+        TextPiece(text="a 180C (160C fan)/gas mark 4 oven")
+    ]
+
+
+@case(tags="text")
 def case_text_low_fahrenheit_beside_celsius_is_dropped() -> TextCase:
     return "warm water (about 110°F / 43°C)", [TextPiece(text="warm water (about 43°C)")]
 

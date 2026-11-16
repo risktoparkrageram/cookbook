@@ -425,7 +425,7 @@ FAHRENHEIT = re.compile(
     r"(?P<degrees>\d{2,3})\s*"
     r"(?:(?P<marked>°\s*F\b)|(?:F\b|degrees(?:\s+F(?:ahrenheit)?)?\b)(?!\s+C))"
 )
-CELSIUS = re.compile(r"\d\s*(?:°\s*C\b|degrees\s+C)")
+CELSIUS = re.compile(r"\d\s*(?:°\s*C\b|C\b|degrees\s+C)")
 # How many characters either side of a Fahrenheit temperature count as "beside" it.
 CELSIUS_NEARBY = 15
 SEPARATOR_BEFORE = re.compile(r"\s*(?:/|,|\bor\b)\s*$")
