@@ -91,7 +91,7 @@ def recipes(database: sqlite3.Connection) -> sqlite3.Connection:
 
 @pytest.fixture
 def client(recipes: sqlite3.Connection, database_path: Path) -> Iterator[TestClient]:
-    settings = Settings(db_path=database_path, secret_key="s" * 32)
+    settings = Settings(db_path=database_path, secret_key="s" * 32, failed_login_delay_s=0)
     with TestClient(create_app(settings)) as test_client:
         yield test_client
 

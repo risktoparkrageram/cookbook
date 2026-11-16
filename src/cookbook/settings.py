@@ -19,3 +19,5 @@ class Settings(BaseSettings):
     host: str = "127.0.0.1"
     port: int = Field(default=8000, ge=1, le=65535)
     migrate: bool = False
+    # Seconds a failed sign-in waits before answering, to slow down password guessing.
+    failed_login_delay_s: float = Field(default=1.0, ge=0)

@@ -7,7 +7,6 @@ from pydantic import AfterValidator, BaseModel, ConfigDict, StringConstraints
 from cookbook.passwords import verify_password
 
 SESSION_MAX_AGE_S = 365 * 24 * 60 * 60
-FAILED_LOGIN_DELAY_S = 1.0
 
 
 def local_path_or_home(path: str) -> str:

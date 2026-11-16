@@ -1,9 +1,13 @@
 import sqlite3
+import time
+from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
 
+from cookbook.app import create_app
 from cookbook.passwords import hash_password
+from cookbook.settings import Settings
 
 SAME_ORIGIN = {"Origin": "http://testserver"}
 
@@ -36,13 +40,19 @@ def test_login_signs_in_and_returns_to_the_page(
         ("someone@example.com", "correct horse battery"),
     ],
 )
-def test_login_fails_on_a_wrong_password_or_email(
-    client: TestClient, admin: str, email: str, password: str
+def test_login_fails_on_a_wrong_password_or_email_after_the_delay(
+    database_path: Path, admin: str, email: str, password: str
 ) -> None:
+    settings = Settings(db_path=database_path, secret_key="s" * 32, failed_login_delay_s=0.3)
+    client = TestClient(create_app(settings))
+
+    started = time.perf_counter()
     response = client.post(
         "/login", data={"email": email, "password": password}, headers=SAME_ORIGIN
     )
+    elapsed = time.perf_counter() - started
 
+    assert elapsed >= 0.3
     assert response.status_code == 401
     assert "That email and password don’t match." in response.text
     assert "cookbook_session" not in response.headers.get("set-cookie", "")

@@ -6,6 +6,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse, Response
 
 from cookbook import auth
 from cookbook.auth import LocalPath, LoginForm
+from cookbook.settings import Settings
 from cookbook.web import Database, SameOrigin, templates
 
 router = APIRouter()
@@ -18,10 +19,15 @@ def login_page(request: Request, next: LocalPath = "/") -> HTMLResponse:
 
 @router.post("/login", dependencies=[SameOrigin])
 def login(request: Request, connection: Database, form: Annotated[LoginForm, Form()]) -> Response:
-    """Sign in and go back to the page the sign-in link was on; a failure costs a second."""
+    """
+    Sign in and go back to the page the sign-in link was on.
+
+    A failure waits COOKBOOK_FAILED_LOGIN_DELAY_S before answering.
+    """
     session = auth.sign_in(connection, form)
     if session is None:
-        time.sleep(auth.FAILED_LOGIN_DELAY_S)
+        settings: Settings = request.app.state.settings
+        time.sleep(settings.failed_login_delay_s)
         return templates.TemplateResponse(
             request,
             "login.html",
