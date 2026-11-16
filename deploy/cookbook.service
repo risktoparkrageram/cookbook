@@ -30,6 +30,9 @@ ReadWritePaths=/srv/cookbook/data
 ProtectHome=yes
 PrivateTmp=yes
 PrivateDevices=yes
+# Other services' processes are invisible: /proc shows only the app's own.
+ProtectProc=invisible
+ProcSubset=pid
 ProtectKernelTunables=yes
 ProtectKernelModules=yes
 ProtectKernelLogs=yes
