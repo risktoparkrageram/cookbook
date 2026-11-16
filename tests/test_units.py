@@ -480,6 +480,40 @@ def case_text_tin_size_in_inches() -> TextCase:
 
 
 @case(tags="text")
+def case_text_slash_fractions_of_an_inch() -> TextCase:
+    return "Roll to 1/2 inch, or 1 1/2 inches", [
+        TextPiece(text="Roll to "),
+        TextPiece(text="1/2 inch", metric="1.5 cm"),
+        TextPiece(text=", or "),
+        TextPiece(text="1 1/2 inches", metric="4 cm"),
+    ]
+
+
+@case(tags="text")
+def case_text_count_of_pieces_converts_only_the_inches() -> TextCase:
+    return "Cut into 2 x 1-inch pieces", [
+        TextPiece(text="Cut into 2 x "),
+        TextPiece(text="1-inch", metric="2.5 cm"),
+        TextPiece(text=" pieces"),
+    ]
+
+
+@case(tags="text")
+def case_text_quoted_word_after_a_number_is_not_inches() -> TextCase:
+    return 'Add the 3 "secret" spices', [TextPiece(text='Add the 3 "secret" spices')]
+
+
+@case(tags="text")
+def case_text_marked_fahrenheit_converts_at_any_value() -> TextCase:
+    return "Rest in water at about 110°F", [TextPiece(text="Rest in water at about 45°C")]
+
+
+@case(tags="text")
+def case_text_bare_f_after_a_small_number_is_left_alone() -> TextCase:
+    return "Leave 10 F aside", [TextPiece(text="Leave 10 F aside")]
+
+
+@case(tags="text")
 def case_text_other_numbers_are_left_alone() -> TextCase:
     return "Simmer 25 minutes at 100°C, stirring 3 times.", [
         TextPiece(text="Simmer 25 minutes at 100°C, stirring 3 times.")

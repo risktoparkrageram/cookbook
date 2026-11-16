@@ -416,20 +416,27 @@ class TextPiece(BaseModel):
     metric: str | None = None
 
 
-NUMBER_IN_TEXT = rf"\d+(?:\.\d+)?\s?[{FRACTION_CHARACTERS}]?|[{FRACTION_CHARACTERS}]"
+NUMBER_IN_TEXT = (
+    r"\d+\s+\d+/\d+|\d+/\d+"
+    rf"|\d+(?:\.\d+)?(?:\s?[{FRACTION_CHARACTERS}])?|[{FRACTION_CHARACTERS}]"
+)
+# "°F" marks Fahrenheit at any value; a bare "F" or "degrees" only counts from 200 to 550.
 FAHRENHEIT = re.compile(
     r"(?P<degrees>\d{2,3})\s*"
-    r"(?:(?P<marked>°\s*F\b|F\b|degrees\s+F(?:ahrenheit)?\b)|degrees\b(?!\s+C))"
+    r"(?:(?P<marked>°\s*F\b)|(?:F\b|degrees(?:\s+F(?:ahrenheit)?)?\b)(?!\s+C))"
 )
 CELSIUS = re.compile(r"\d\s*(?:°\s*C\b|degrees\s+C)")
 # How many characters either side of a Fahrenheit temperature count as "beside" it.
 CELSIUS_NEARBY = 15
 SEPARATOR_BEFORE = re.compile(r"\s*(?:/|,|\bor\b)\s*$")
 SEPARATOR_AFTER = re.compile(r"^\s*(?:/|,|\bor\b)\s*|^\s+")
+# A " means inches only straight after the number (3"), never before a quoted word (3 "big").
 INCHES = re.compile(
     rf"(?P<first>{NUMBER_IN_TEXT})(?:\s*[x×]\s*(?P<second>{NUMBER_IN_TEXT}))?"
-    r"(?:\s*-\s*|\s*)(?:inch(?:es)?\b|\"|″)"
+    r"(?:(?:\s*-\s*|\s*)inch(?:es)?\b|[\"″])"
 )
+# "9 x 13-inch" is a size only before one of these; "2 x 1-inch pieces" is a count.
+CONTAINER_AFTER = re.compile(r"^\s+(?:[a-z-]+\s+)?(?:pan|tin|dish|tray|sheet)s?\b", re.IGNORECASE)
 # Oven settings as UK recipes write them, by °F: (°C, gas mark).
 OVEN_SETTINGS = {
     225: (110, "¼"),
@@ -460,9 +467,11 @@ def convert_text(text: str) -> list[TextPiece]:
     Fahrenheit is never shown. One beside a Celsius temperature is dropped with its
     separator: "190°C / 375°F / gas 5" reads "190°C / gas 5", "475°F / 245°C" reads
     "245°C". One on its own becomes Celsius: 375°F reads "190°C, gas 5" (UK oven settings;
-    other temperatures to the nearest 5 °C, without a gas mark). "400 degrees" counts as
-    Fahrenheit from 200 to 550. "¾-inch" gets the metric form "2 cm" and "9 x 13-inch"
-    "23 x 33 cm". Other numbers ("bake 25 minutes") are left alone.
+    other temperatures to the nearest 5 °C, without a gas mark). "350°F" is Fahrenheit at
+    any value; "400 F" and "400 degrees" only from 200 to 550. "¾-inch" and "1/2 inch" get
+    metric forms ("2 cm", "1.5 cm"). "9 x 13-inch" before a pan, tin, dish, tray or sheet
+    is a size ("23 x 33 cm"); otherwise the first number is a count ("2 x 1-inch pieces"
+    converts only the 1-inch). Other numbers ("bake 25 minutes") are left alone.
     """
     # (start, end, text shown, metric form): replacements of text[start:end].
     found: list[tuple[int, int, str, str | None]] = []
@@ -486,9 +495,14 @@ def convert_text(text: str) -> list[TextPiece]:
         else:
             found.append((start, end, f"{round((degrees - 32) * 5 / 9 / 5) * 5}°C", None))
     for match in INCHES.finditer(text):
-        sizes = [centimetres(token_value(match["first"].replace(" ", "")))]
+        if match["second"] and not CONTAINER_AFTER.match(text[match.end() :]):
+            start = match.start("second")
+            second_only = centimetres(token_value(match["second"])) + " cm"
+            found.append((start, match.end(), text[start : match.end()], second_only))
+            continue
+        sizes = [centimetres(token_value(match["first"]))]
         if match["second"]:
-            sizes.append(centimetres(token_value(match["second"].replace(" ", ""))))
+            sizes.append(centimetres(token_value(match["second"])))
         found.append((match.start(), match.end(), match[0], " x ".join(sizes) + " cm"))
 
     pieces: list[TextPiece] = []
