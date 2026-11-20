@@ -11,7 +11,8 @@ as an A4 PDF (with or without notes) or as a zipped draft folder; signed-in user
 download every recipe as one zip. In the kitchen, ingredients and steps tick off, the
 current step is marked, the quantities scale with the serves and switch to metric, and the
 screen stays awake; all of it is remembered per phone. The site can be added to a phone's
-home screen.
+home screen, and a recipe link shared in a chat app previews with its title, intro and
+card image (Open Graph tags; the sending phone must be on the home network to fetch them).
 
 There is one account and no sign-up. It is created on the host with recipe-db's
 `set-password` command, which writes an scrypt hash to the `users` table; running it again

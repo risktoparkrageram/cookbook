@@ -1,6 +1,23 @@
 {% extends "base.html" %}
 {% block title %}{{ recipe.title }} · Cookbook{% endblock %}
 {% block head %}<script src="/static/cook.js" defer></script>{% endblock %}
+{% block preview %}
+{% set description = recipe.intro|truncate(200) if recipe.intro else recipe.kicker %}
+<meta property="og:type" content="article">
+<meta property="og:title" content="{{ recipe.title }}">
+<meta property="og:description" content="{{ description }}">
+<meta name="description" content="{{ description }}">
+<meta property="og:url" content="{{ request.url.replace(query='', fragment='') }}">
+{% if recipe.card %}
+<meta property="og:image" content="{{ request.base_url.replace(path=recipe.card.url) }}">
+<meta property="og:image:type" content="image/webp">
+<meta property="og:image:width" content="{{ recipe.card.width }}">
+<meta property="og:image:height" content="{{ recipe.card.height }}">
+{% if recipe.card.alt %}<meta property="og:image:alt" content="{{ recipe.card.alt }}">{% endif %}
+{% else %}
+<meta property="og:image" content="{{ request.base_url.replace(path='/static/icons/icon-512.png') }}">
+{% endif %}
+{% endblock %}
 {% macro pieces(text_pieces) -%}
 {%- for piece in text_pieces -%}
 {%- if piece.metric -%}<span class="conv" data-metric="{{ piece.metric }}">{{ piece.text }}</span>{%- else -%}{{ piece.text }}{%- endif -%}

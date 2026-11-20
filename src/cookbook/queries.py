@@ -109,7 +109,8 @@ class Recipe(BaseModel):
     """
     Everything the recipe page shows.
 
-    notes holds the recipe notes; step notes sit on their step.
+    notes holds the recipe notes; step notes sit on their step. card is the image a link
+    preview shows, being smaller than hero.
     """
 
     model_config = ConfigDict(frozen=True)
@@ -135,6 +136,7 @@ class Recipe(BaseModel):
     cooked: bool
     tags: list[Tag]
     hero: ImageLink | None
+    card: ImageLink | None
     sections: list[IngredientSection]
     steps: list[Step]
     notes: list[Note]
@@ -275,9 +277,12 @@ def recipe(connection: sqlite3.Connection, slug: str) -> Recipe | None:
         return None
     recipe_id = row["id"]
 
-    hero = connection.execute(
-        f"SELECT {IMAGE_COLUMNS} FROM images WHERE recipe_id = ? AND role = 'hero'", (recipe_id,)
-    ).fetchone()
+    images = {
+        image["role"]: image_link(image)
+        for image in connection.execute(
+            f"SELECT images.role, {IMAGE_COLUMNS} FROM images WHERE recipe_id = ?", (recipe_id,)
+        )
+    }
     tags = [
         Tag(name=name, kind=kind)
         for name, kind in connection.execute(
@@ -384,7 +389,8 @@ def recipe(connection: sqlite3.Connection, slug: str) -> Recipe | None:
         archived=bool(row["archived"]),
         cooked=bool(row["cooked"]),
         tags=tags,
-        hero=image_link(hero) if hero is not None else None,
+        hero=images.get("hero"),
+        card=images.get("card"),
         sections=sections,
         steps=steps,
         notes=notes_by_step[None],

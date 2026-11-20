@@ -132,6 +132,47 @@ def test_recipe_page_carries_metric_amounts_and_conversions(
     assert 'aria-label="Step 2 done"' in tofu
 
 
+def test_recipe_page_describes_itself_for_link_previews(
+    client: TestClient, recipes: sqlite3.Connection
+) -> None:
+    """
+    The bowl gets an intro longer than a preview shows; the noodles have no intro or card
+    image, so they fall back to the kicker and the app icon.
+    """
+    recipes.execute(
+        "UPDATE recipes SET intro = ? WHERE id = 1",
+        ("A weeknight bowl of crisp tofu over rice. " * 6,),
+    )
+
+    bowl = client.get("/recipes/tofu_rice_bowl?serves=2", headers={"Host": "cookbook.test"}).text
+    noodles = client.get("/recipes/chilli_oil_noodles").text
+
+    meta_tag = r'<meta (?:property|name)="(og:[\w:]+|description)" content="([^"]*)">'
+    shortened_intro = (
+        "A weeknight bowl of crisp tofu over rice. A weeknight bowl of crisp tofu over rice."
+        " A weeknight bowl of crisp tofu over rice. A weeknight bowl of crisp tofu over"
+        " rice. A weeknight bowl of crisp..."
+    )
+    assert re.findall(meta_tag, bowl) == [
+        ("og:site_name", "Cookbook"),
+        ("og:type", "article"),
+        ("og:title", "Tofu Rice Bowl"),
+        ("og:description", shortened_intro),
+        ("description", shortened_intro),
+        ("og:url", "http://cookbook.test/recipes/tofu_rice_bowl"),
+        ("og:image", "http://cookbook.test/images/6-01234567.webp"),
+        ("og:image:type", "image/webp"),
+        ("og:image:width", "600"),
+        ("og:image:height", "450"),
+        ("og:image:alt", "A bowl of tofu"),
+    ]
+    assert '<meta property="og:description" content="Asian · Main">' in noodles
+    assert (
+        '<meta property="og:image" content="http://testserver/static/icons/icon-512.png">'
+        in noodles
+    )
+
+
 def test_text_is_escaped(client: TestClient, recipes: sqlite3.Connection) -> None:
     recipes.execute("UPDATE recipe_notes SET body = '<b>hot</b>' WHERE id = 1")
 
