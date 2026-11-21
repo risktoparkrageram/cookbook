@@ -59,14 +59,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         dependencies=[Depends(signed_in_user)],
     )
     app.state.settings = settings
-    # The cookie is HttpOnly (always, in Starlette) and not Secure: the site is plain HTTP.
+    # The cookie is HttpOnly (always, in Starlette), and Secure when the site is served over
+    # HTTPS.
     app.add_middleware(
         SessionMiddleware,
         secret_key=settings.secret_key.get_secret_value(),
         session_cookie="cookbook_session",
         max_age=auth.SESSION_MAX_AGE_S,
         same_site="lax",
-        https_only=False,
+        https_only=settings.secure_cookie,
     )
     app.mount("/static", StaticAssets(directory=PACKAGE_DIR / "static"), name="static")
     app.include_router(pages.router)

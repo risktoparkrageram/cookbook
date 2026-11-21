@@ -67,6 +67,7 @@ COOKBOOK_DB_PATH=path/to/recipes.db COOKBOOK_SECRET_KEY=$(openssl rand -hex 32) 
 | `COOKBOOK_HOST`, `COOKBOOK_PORT` | Listen address, default `127.0.0.1:8000` |
 | `COOKBOOK_MIGRATE` | Apply pending migrations at startup, default off |
 | `COOKBOOK_FAILED_LOGIN_DELAY_S` | Seconds a failed sign-in waits before answering, default 1 |
+| `COOKBOOK_SECURE_COOKIE` | Mark the session cookie Secure (HTTPS only), default off; on where the site is served over HTTPS |
 
 ## Command line
 

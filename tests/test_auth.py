@@ -26,11 +26,34 @@ def test_login_signs_in_and_returns_to_the_page(
     assert response.headers["location"] == "/tags"
     cookie = response.headers["set-cookie"]
     assert cookie.startswith("cookbook_session=")
-    assert "httponly" in cookie.lower() and "samesite=lax" in cookie.lower()
-    assert "max-age=31536000" in cookie.lower()
+    attributes = [part.strip().lower() for part in cookie.split(";")[1:]]
+    assert "httponly" in attributes and "samesite=lax" in attributes
+    assert "max-age=31536000" in attributes
+    # Off by default: a Secure cookie would be dropped by the plain-HTTP dev server.
+    assert "secure" not in attributes
     assert "Sign out" in client.get("/").text
     last_login = recipes.execute("SELECT last_login_at FROM users").fetchone()[0]
     assert last_login is not None
+
+
+def test_login_cookie_is_secure_when_the_site_is_served_over_https(
+    database_path: Path, admin: str
+) -> None:
+    settings = Settings(
+        db_path=database_path, secret_key="s" * 32, failed_login_delay_s=0, secure_cookie=True
+    )
+    client = TestClient(create_app(settings))
+
+    response = client.post(
+        "/login",
+        data={"email": "cook@example.com", "password": "correct horse battery"},
+        headers=SAME_ORIGIN,
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    attributes = [part.strip().lower() for part in response.headers["set-cookie"].split(";")[1:]]
+    assert "secure" in attributes
 
 
 @pytest.mark.parametrize(
