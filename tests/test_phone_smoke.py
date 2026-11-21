@@ -26,7 +26,9 @@ def browser() -> Iterator[Browser]:
 @pytest.fixture
 def site(recipes: sqlite3.Connection, admin: str, database_path: Path) -> Iterator[str]:
     """The app served by uvicorn on a free port, over the fixture recipes and account."""
-    settings = Settings(db_path=database_path, secret_key="s" * 32, failed_login_delay_s=0)
+    settings = Settings(
+        db_path=database_path, secret_key="s" * 32, failed_login_delay_s=0, secure_cookie=False
+    )
     server = uvicorn.Server(
         uvicorn.Config(create_app(settings), host="127.0.0.1", port=0, log_level="warning")
     )

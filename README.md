@@ -32,7 +32,7 @@ Run the app against a database (created by the migrations and filled by an impor
 
 ```bash
 COOKBOOK_DB_PATH=path/to/recipes.db COOKBOOK_SECRET_KEY=$(openssl rand -hex 32) \
-  uv run uvicorn --factory cookbook.app:create_app --reload
+  COOKBOOK_SECURE_COOKIE=false uv run uvicorn --factory cookbook.app:create_app --reload
 ```
 
 ## Layout
@@ -67,7 +67,7 @@ COOKBOOK_DB_PATH=path/to/recipes.db COOKBOOK_SECRET_KEY=$(openssl rand -hex 32) 
 | `COOKBOOK_HOST`, `COOKBOOK_PORT` | Listen address, default `127.0.0.1:8000` |
 | `COOKBOOK_MIGRATE` | Apply pending migrations at startup, default off |
 | `COOKBOOK_FAILED_LOGIN_DELAY_S` | Seconds a failed sign-in waits before answering, default 1 |
-| `COOKBOOK_SECURE_COOKIE` | Mark the session cookie Secure (HTTPS only), default off; on where the site is served over HTTPS |
+| `COOKBOOK_SECURE_COOKIE` | Mark the session cookie Secure (HTTPS only), default on; `false` only for the plain-HTTP dev server |
 
 ## Command line
 
@@ -134,7 +134,7 @@ Then the environment files under `/etc/cookbook/`, readable by root only:
 
 | File | Holds |
 |---|---|
-| `cookbook.env` | `COOKBOOK_DB_PATH=/srv/cookbook/data/recipes.db`, `COOKBOOK_SECRET_KEY=` (`openssl rand -hex 32`), `COOKBOOK_SECURE_COOKIE=true` |
+| `cookbook.env` | `COOKBOOK_DB_PATH=/srv/cookbook/data/recipes.db`, `COOKBOOK_SECRET_KEY=` (`openssl rand -hex 32`) |
 | `caddy.env` | `COOKBOOK_DOMAIN=<name>.duckdns.org`, `COOKBOOK_ACME_EMAIL=` an address for the certificate authorities' expiry notices, `DUCKDNS_TOKEN=` the DuckDNS account token |
 | `mdns.env` | `COOKBOOK_MDNS_ADDRESS=` the host's reserved address |
 | `backup.env` | `COOKBOOK_DB_PATH` as above, `COOKBOOK_BACKUP_DIR=` an existing directory, ideally on another disk |

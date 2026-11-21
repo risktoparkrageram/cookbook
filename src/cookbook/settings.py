@@ -21,7 +21,8 @@ class Settings(BaseSettings):
     migrate: bool = False
     # Seconds a failed sign-in waits before answering, to slow down password guessing.
     failed_login_delay_s: float = Field(default=1.0, ge=0)
-    # Mark the session cookie Secure, so browsers send it only over HTTPS. On wherever the
-    # site is served over HTTPS (the host, behind Caddy); off for the plain-HTTP dev server,
-    # where browsers would drop a Secure cookie and sign-in would never stick.
-    secure_cookie: bool = False
+    # Mark the session cookie Secure, so browsers send it only over HTTPS. On by default, so
+    # a host that leaves it unset never sends the cookie over plain HTTP; off only for the
+    # plain-HTTP dev server, where browsers would drop a Secure cookie and sign-in would
+    # never stick.
+    secure_cookie: bool = True

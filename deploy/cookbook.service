@@ -17,7 +17,7 @@ Type=simple
 User=cookbook
 Group=cookbook
 WorkingDirectory=/srv/cookbook/cookbook
-# COOKBOOK_DB_PATH, COOKBOOK_SECRET_KEY and COOKBOOK_SECURE_COOKIE=true (see README.md)
+# COOKBOOK_DB_PATH and COOKBOOK_SECRET_KEY (see README.md)
 EnvironmentFile=/etc/cookbook/cookbook.env
 # uvicorn trusts X-Forwarded-Proto from 127.0.0.1 by default, so behind Caddy the app sees
 # https and builds https links (Open Graph URLs).
