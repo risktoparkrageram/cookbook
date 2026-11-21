@@ -99,16 +99,24 @@ Before the first install:
   protection), add a local DNS record for `cookbook.<name>.duckdns.org` on the network's
   own DNS server. That record also keeps the name working when the internet is down.
 
-First install, on the host:
+The packaged Caddy has no DuckDNS plugin, and Caddy's download page builds plugins only for
+signed-in users, so build the binary with Caddy's builder image on any machine with Docker,
+for the host's architecture and the packaged version (`caddy version` on the host):
+
+```bash
+docker run --rm -e GOOS=linux -e GOARCH=arm64 -e CGO_ENABLED=0 -v "$PWD":/out \
+  caddy:2.11.9-builder xcaddy build v2.11.9 --with github.com/caddy-dns/duckdns --output /out/caddy
+```
+
+and copy `caddy` to the host. First install, on the host:
 
 ```bash
 sudo apt install avahi-utils
 # Caddy from its apt repository (https://caddyserver.com/docs/install#debian-ubuntu-raspbian),
 # held off port 80 until it is configured
 sudo systemctl disable --now caddy
-# A Caddy build with the DuckDNS plugin, in place of the packaged binary; apt upgrades then
-# go to caddy.default, and `sudo caddy upgrade` updates the custom build with its plugins
-curl -o caddy "https://caddyserver.com/api/download?os=linux&arch=arm64&p=github.com%2Fcaddy-dns%2Fduckdns"
+# The DuckDNS build in place of the packaged binary (caddy list-modules shows
+# dns.providers.duckdns); apt upgrades then go to caddy.default
 sudo dpkg-divert --divert /usr/bin/caddy.default --rename /usr/bin/caddy
 sudo install -m 0755 caddy /usr/bin/caddy.custom
 sudo update-alternatives --install /usr/bin/caddy caddy /usr/bin/caddy.default 10
@@ -150,3 +158,8 @@ installs any changed unit files, Caddy drop-ins and `Caddyfile` (restarting or r
 Caddy), restarts the app and checks `/healthz`; then, from the laptop, it checks `/healthz`
 over HTTPS and prints the certificate's expiry date. It refuses a host without Caddy, where
 the app would be unreachable. The host, user and site URL come from `deploy/host.env`.
+
+Caddy updates: apt keeps upgrading the packaged binary (`caddy.default`), but the one that
+runs is the DuckDNS build, which apt never touches. To update it, build again with the new
+version in both places in the `docker run` line, install it over `/usr/bin/caddy.custom`
+and `sudo systemctl restart caddy`.
