@@ -42,7 +42,7 @@ COOKBOOK_DB_PATH=path/to/recipes.db COOKBOOK_SECRET_KEY=$(openssl rand -hex 32) 
 | `src/cookbook/app.py` | `create_app()`: the FastAPI app; refuses to start on a database at another schema version |
 | `src/cookbook/queries.py` | Reads recipes, tags, sources and notes into the models the pages show |
 | `src/cookbook/routes/` | Pages (`pages.py`), sign-in (`auth.py`), note writes (`notes.py`) and the JSON API with `/healthz` (`api.py`) |
-| `src/cookbook/auth.py`, `notes.py` | Signing in and the session cookie's contents; adding, editing and deleting notes |
+| `src/cookbook/auth.py`, `notes.py` | Signing in, the limit of 5 unsuccessful sign-ins per address in 15 minutes, and the session cookie's contents; adding, editing and deleting notes |
 | `src/cookbook/templates/`, `static/` | Jinja2 templates, CSS, scripts and the bundled Inter font (SIL OFL, `static/fonts/OFL.txt`) |
 | `src/cookbook/migrations/` | Database schema as numbered SQL migrations (`schema.migrate`) |
 | `src/cookbook/draft.py` | `RecipeDraft`: a recipe as a TOML file, for import and export |
@@ -66,7 +66,7 @@ COOKBOOK_DB_PATH=path/to/recipes.db COOKBOOK_SECRET_KEY=$(openssl rand -hex 32) 
 | `COOKBOOK_SECRET_KEY` | Session signing key, at least 32 characters (required) |
 | `COOKBOOK_HOST`, `COOKBOOK_PORT` | Listen address, default `127.0.0.1:8000` |
 | `COOKBOOK_MIGRATE` | Apply pending migrations at startup, default off |
-| `COOKBOOK_FAILED_LOGIN_DELAY_S` | Seconds a failed sign-in waits before answering, default 1 |
+| `COOKBOOK_FAILED_LOGIN_DELAY_S` | Seconds a failed sign-in waits before answering, default 1; an address with 5 unsuccessful sign-ins in 15 minutes is refused until they expire |
 | `COOKBOOK_SECURE_COOKIE` | Mark the session cookie Secure (HTTPS only), default on; `false` only for the plain-HTTP dev server |
 
 ## Command line

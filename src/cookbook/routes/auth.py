@@ -1,3 +1,4 @@
+import asyncio
 import time
 from typing import Annotated
 
@@ -18,22 +19,40 @@ def login_page(request: Request, next: LocalPath = "/") -> HTMLResponse:
 
 
 @router.post("/login", dependencies=[SameOrigin])
-def login(request: Request, connection: Database, form: Annotated[LoginForm, Form()]) -> Response:
+async def login(
+    request: Request, connection: Database, form: Annotated[LoginForm, Form()]
+) -> Response:
     """
     Sign in and go back to the page the sign-in link was on.
 
-    A failure waits COOKBOOK_FAILED_LOGIN_DELAY_S before answering.
+    An address with auth.LOGIN_ATTEMPTS unsuccessful attempts in the window gets 429 without
+    a password check. Passwords are checked one at a time on a worker thread, because each
+    scrypt check needs about 32 MB and the app's memory is capped. A failure waits
+    COOKBOOK_FAILED_LOGIN_DELAY_S before answering, without holding a thread.
     """
-    session = auth.sign_in(connection, form)
+    settings: Settings = request.app.state.settings
+    attempts: auth.LoginAttempts = request.app.state.login_attempts
+    password_checks: asyncio.Semaphore = request.app.state.password_checks
+    # Behind Caddy, uvicorn takes the address from X-Forwarded-For.
+    address = request.client.host if request.client else ""
+    if not attempts.allow(address, time.monotonic()):
+        return templates.TemplateResponse(
+            request,
+            "login.html",
+            {"next": form.next, "email": form.email, "too_many": True},
+            status_code=429,
+        )
+    async with password_checks:
+        session = await asyncio.to_thread(auth.sign_in, connection, form)
     if session is None:
-        settings: Settings = request.app.state.settings
-        time.sleep(settings.failed_login_delay_s)
+        await asyncio.sleep(settings.failed_login_delay_s)
         return templates.TemplateResponse(
             request,
             "login.html",
             {"next": form.next, "email": form.email, "failed": True},
             status_code=401,
         )
+    attempts.forget(address)
     request.session.clear()
     request.session.update(session.model_dump())
     return RedirectResponse(form.next, status_code=303)

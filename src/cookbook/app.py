@@ -1,3 +1,4 @@
+import asyncio
 import os
 
 from fastapi import Depends, FastAPI
@@ -59,6 +60,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         dependencies=[Depends(signed_in_user)],
     )
     app.state.settings = settings
+    app.state.login_attempts = auth.LoginAttempts()
+    # Password checks and exports are the work that takes real memory; one of each at a
+    # time keeps a burst of requests inside the service's memory cap.
+    app.state.password_checks = asyncio.Semaphore(1)
+    app.state.exports = asyncio.Semaphore(1)
     # The cookie is HttpOnly (always, in Starlette), and Secure when the site is served over
     # HTTPS.
     app.add_middleware(

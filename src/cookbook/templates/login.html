@@ -10,6 +10,7 @@
   {% else %}
   <form class="login" method="post" action="/login">
     {% if failed %}<p class="error" role="alert">That email and password don’t match.</p>{% endif %}
+    {% if too_many %}<p class="error" role="alert">Too many attempts. Try again in 15 minutes.</p>{% endif %}
     <input type="hidden" name="next" value="{{ next }}">
     <label class="field"><span class="label">Email</span>
       <input type="email" name="email" value="{{ email }}" autocomplete="username" required autocapitalize="off">

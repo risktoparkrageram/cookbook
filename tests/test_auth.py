@@ -6,6 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from cookbook.app import create_app
+from cookbook.auth import LoginAttempts
 from cookbook.passwords import hash_password
 from cookbook.settings import Settings
 
@@ -74,6 +75,54 @@ def test_login_fails_on_a_wrong_password_or_email_after_the_delay(
     assert "That email and password don’t match." in response.text
     assert "cookbook_session" not in response.headers.get("set-cookie", "")
     assert "Sign in</a>" in client.get("/").text
+
+
+def test_login_refuses_an_address_after_five_unsuccessful_attempts(
+    client: TestClient, admin: str
+) -> None:
+    """The sixth try is refused even with the right password; other addresses still sign in."""
+    for _ in range(5):
+        failed = client.post(
+            "/login", data={"email": admin, "password": "a wrong guess"}, headers=SAME_ORIGIN
+        )
+        assert failed.status_code == 401
+
+    refused = client.post(
+        "/login", data={"email": admin, "password": "correct horse battery"}, headers=SAME_ORIGIN
+    )
+    elsewhere = TestClient(client.app, client=("192.0.2.20", 50000)).post(
+        "/login",
+        data={"email": admin, "password": "correct horse battery"},
+        headers=SAME_ORIGIN,
+        follow_redirects=False,
+    )
+
+    assert refused.status_code == 429
+    assert "Too many attempts. Try again in 15 minutes." in refused.text
+    assert "cookbook_session" not in refused.headers.get("set-cookie", "")
+    assert elsewhere.status_code == 303
+
+
+def test_signing_in_clears_the_address_attempts(client: TestClient, admin: str) -> None:
+    """Four failures, a sign-in, then four more failures still leave a fifth attempt."""
+    for password in ["a wrong guess"] * 4 + ["correct horse battery"] + ["a wrong guess"] * 4:
+        client.post("/login", data={"email": admin, "password": password}, headers=SAME_ORIGIN)
+
+    response = client.post(
+        "/login",
+        data={"email": admin, "password": "correct horse battery"},
+        headers=SAME_ORIGIN,
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+
+
+def test_login_attempts_expire_after_the_window() -> None:
+    attempts = LoginAttempts()
+    allowed = [attempts.allow("192.0.2.20", now) for now in [0, 10, 20, 30, 40, 899, 900]]
+
+    assert allowed == [True, True, True, True, True, False, True]
 
 
 @pytest.mark.parametrize(
