@@ -88,7 +88,9 @@ The app listens only on `127.0.0.1:8000`. [Caddy](https://caddyserver.com) serve
 address is the host's reserved (private) address: it resolves anywhere but leads somewhere
 only on the home network. Caddy gets a Let's Encrypt certificate, with ZeroSSL as fallback,
 through the DNS challenge, so nothing is opened on the router, and renews it by itself.
-Plain HTTP by any name, `cookbook.local` included, forwards to the HTTPS site.
+Plain HTTP by any name, `cookbook.local` included, forwards to the HTTPS site. Caddy's admin
+API listens on a socket only the `caddy` user can open, not on `localhost:2019`, so no other
+process on the host can rewrite its configuration or read the DuckDNS token through it.
 
 Before the first install:
 

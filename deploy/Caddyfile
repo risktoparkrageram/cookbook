@@ -7,6 +7,11 @@
 # COOKBOOK_ACME_EMAIL are filled in when the file is read; DUCKDNS_TOKEN only when Caddy
 # starts, so the token never appears in the loaded config.
 {
+	# The admin API rewrites the running config without authentication, so it listens on a
+	# socket only the caddy user can open (the drop-in creates /run/caddy), not on
+	# localhost:2019 where any process on the host could load a config that reveals the
+	# token. caddy reload finds the socket in this file.
+	admin unix//run/caddy/admin.sock|0600
 	# Caddy adds ZeroSSL as a fallback issuer only when an email is set, and only when the
 	# DNS challenge is configured here rather than in a site's tls block.
 	email {$COOKBOOK_ACME_EMAIL}
@@ -20,7 +25,15 @@
 *.{$COOKBOOK_DOMAIN} {
 	@cookbook host cookbook.{$COOKBOOK_DOMAIN}
 	handle @cookbook {
-		header Strict-Transport-Security "max-age=300"
+		header {
+			Strict-Transport-Security "max-age=300"
+			# No other site may frame the pages, browsers take each response's declared
+			# type as given, and links to other sites carry no Referer.
+			Content-Security-Policy "frame-ancestors 'none'"
+			X-Frame-Options DENY
+			X-Content-Type-Options nosniff
+			Referrer-Policy same-origin
+		}
 		reverse_proxy 127.0.0.1:8000
 	}
 	handle {
