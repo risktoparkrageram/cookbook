@@ -1,0 +1,34 @@
+# Serves the cookbook over HTTPS at cookbook.<COOKBOOK_DOMAIN>, a DuckDNS name whose address
+# is this host's private address, so the site is reachable only on the home network.
+# Certificates come from Let's Encrypt, with ZeroSSL as fallback, through the DNS challenge,
+# so nothing has to be reachable from the internet.
+#
+# Values come from /etc/cookbook/caddy.env (see README.md). COOKBOOK_DOMAIN and
+# COOKBOOK_ACME_EMAIL are filled in when the file is read; DUCKDNS_TOKEN only when Caddy
+# starts, so the token never appears in the loaded config.
+{
+	# Caddy adds ZeroSSL as a fallback issuer only when an email is set, and only when the
+	# DNS challenge is configured here rather than in a site's tls block.
+	email {$COOKBOOK_ACME_EMAIL}
+	acme_dns duckdns {env.DUCKDNS_TOKEN}
+	# The challenge record is checked through public resolvers, not a local DNS cache.
+	tls_resolvers 1.1.1.1 9.9.9.9
+}
+
+# A wildcard certificate needs one challenge record, and DuckDNS holds only one TXT value per
+# name. The public certificate logs show the DuckDNS name but not "cookbook".
+*.{$COOKBOOK_DOMAIN} {
+	@cookbook host cookbook.{$COOKBOOK_DOMAIN}
+	handle @cookbook {
+		header Strict-Transport-Security "max-age=300"
+		reverse_proxy 127.0.0.1:8000
+	}
+	handle {
+		abort
+	}
+}
+
+# Plain HTTP by any name, cookbook.local or the bare address included, forwards to the site.
+http:// {
+	redir https://cookbook.{$COOKBOOK_DOMAIN}{uri} permanent
+}

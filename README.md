@@ -55,7 +55,7 @@ COOKBOOK_DB_PATH=path/to/recipes.db COOKBOOK_SECRET_KEY=$(openssl rand -hex 32) 
 | `src/cookbook/static/htmx.min.js` | [htmx](https://htmx.org) 2.0.4, vendored release build (BSD-0) |
 | `src/cookbook/passwords.py` | Hashes and verifies the admin password (scrypt) |
 | `src/cookbook/cli.py` | The `cookbook` command: `migrate` and `backup` |
-| `deploy/` | systemd units for the app, mDNS and nightly backups, and `deploy.sh` for updates; host specifics stay in the git-ignored `host.env` and `local/` |
+| `deploy/` | systemd units for the app, mDNS and nightly backups, the `Caddyfile` and Caddy drop-in for HTTPS, and `deploy.sh` for updates; host specifics stay in the git-ignored `host.env` and `local/` |
 | `src/cookbook/settings.py` | Configuration from `COOKBOOK_*` environment variables |
 
 ## Configuration
@@ -83,10 +83,36 @@ systemd, as an unprivileged `cookbook` user, from `/srv/cookbook`. The unit file
 `deploy/`; anything specific to one host goes in `deploy/host.env` and `deploy/local/`,
 which are git-ignored.
 
+The app listens only on `127.0.0.1:8000`. [Caddy](https://caddyserver.com) serves it at
+`https://cookbook.<name>.duckdns.org`, a free [DuckDNS](https://www.duckdns.org) name whose
+address is the host's reserved (private) address: it resolves anywhere but leads somewhere
+only on the home network. Caddy gets a Let's Encrypt certificate, with ZeroSSL as fallback,
+through the DNS challenge, so nothing is opened on the router, and renews it by itself.
+Plain HTTP by any name, `cookbook.local` included, forwards to the HTTPS site.
+
+Before the first install:
+
+- At DuckDNS, create the name and set its address ("current ip") to the host's reserved
+  address; DuckDNS fills in the public address of the browser that created it. Keep the
+  account token private: it controls every name on the account.
+- If the router's DNS drops public answers that point at private addresses (DNS rebinding
+  protection), add a local DNS record for `cookbook.<name>.duckdns.org` on the network's
+  own DNS server. That record also keeps the name working when the internet is down.
+
 First install, on the host:
 
 ```bash
 sudo apt install avahi-utils
+# Caddy from its apt repository (https://caddyserver.com/docs/install#debian-ubuntu-raspbian),
+# held off port 80 until it is configured
+sudo systemctl disable --now caddy
+# A Caddy build with the DuckDNS plugin, in place of the packaged binary; apt upgrades then
+# go to caddy.default, and `sudo caddy upgrade` updates the custom build with its plugins
+curl -o caddy "https://caddyserver.com/api/download?os=linux&arch=arm64&p=github.com%2Fcaddy-dns%2Fduckdns"
+sudo dpkg-divert --divert /usr/bin/caddy.default --rename /usr/bin/caddy
+sudo install -m 0755 caddy /usr/bin/caddy.custom
+sudo update-alternatives --install /usr/bin/caddy caddy /usr/bin/caddy.default 10
+sudo update-alternatives --install /usr/bin/caddy caddy /usr/bin/caddy.custom 50
 sudo adduser --system --group --no-create-home cookbook
 sudo install -d -o <user> /srv/cookbook /srv/cookbook/python
 sudo install -d -o cookbook -g cookbook -m 0700 /srv/cookbook/data
@@ -100,13 +126,17 @@ Then the environment files under `/etc/cookbook/`, readable by root only:
 
 | File | Holds |
 |---|---|
-| `cookbook.env` | `COOKBOOK_DB_PATH=/srv/cookbook/data/recipes.db`, `COOKBOOK_SECRET_KEY=` (`openssl rand -hex 32`) |
+| `cookbook.env` | `COOKBOOK_DB_PATH=/srv/cookbook/data/recipes.db`, `COOKBOOK_SECRET_KEY=` (`openssl rand -hex 32`), `COOKBOOK_SECURE_COOKIE=true` |
+| `caddy.env` | `COOKBOOK_DOMAIN=<name>.duckdns.org`, `COOKBOOK_ACME_EMAIL=` an address for the certificate authorities' expiry notices, `DUCKDNS_TOKEN=` the DuckDNS account token |
 | `mdns.env` | `COOKBOOK_MDNS_ADDRESS=` the host's reserved address |
 | `backup.env` | `COOKBOOK_DB_PATH` as above, `COOKBOOK_BACKUP_DIR=` an existing directory, ideally on another disk |
 
-Copy `deploy/*.service` and `deploy/*.timer` to `/etc/systemd/system/`, plus any
-drop-ins from `deploy/local/`, then `sudo systemctl daemon-reload` and
-`sudo systemctl enable --now cookbook cookbook-mdns cookbook-backup.timer`.
+Copy `deploy/*.service` and `deploy/*.timer` to `/etc/systemd/system/`,
+`deploy/caddy.service.d/` to `/etc/systemd/system/caddy.service.d/` and `deploy/Caddyfile`
+to `/etc/caddy/Caddyfile`, plus any drop-ins from `deploy/local/`, then
+`sudo systemctl daemon-reload` and
+`sudo systemctl enable --now cookbook cookbook-mdns caddy cookbook-backup.timer`.
+`journalctl -u caddy` shows the certificate being issued, within a minute or two.
 
 The database arrives once, before anyone writes a note; afterwards recipes only come in
 through recipe-db's import. Bring it to the current schema as the `cookbook` user:
@@ -116,5 +146,7 @@ The one account is created with recipe-db's `set-password`.
 Updates: push `main`, then run `deploy/deploy.sh` from the laptop. It refuses unless the
 checkout is clean and level with `origin/main`; on the host it pulls, runs
 `uv sync --frozen --no-dev`, `cookbook migrate` (which backs the database up first),
-installs any changed unit files, restarts the app and checks `/healthz`. The host and
-user come from `deploy/host.env`.
+installs any changed unit files, Caddy drop-ins and `Caddyfile` (restarting or reloading
+Caddy), restarts the app and checks `/healthz`; then, from the laptop, it checks `/healthz`
+over HTTPS and prints the certificate's expiry date. It refuses a host without Caddy, where
+the app would be unreachable. The host, user and site URL come from `deploy/host.env`.
