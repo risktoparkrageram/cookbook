@@ -154,10 +154,12 @@ The one account is created with recipe-db's `set-password`.
 Updates: push `main`, then run `deploy/deploy.sh` from the laptop. It refuses unless the
 checkout is clean and level with `origin/main`; on the host it pulls, runs
 `uv sync --frozen --no-dev`, `cookbook migrate` (which backs the database up first),
-installs any changed unit files, Caddy drop-ins and `Caddyfile` (restarting or reloading
-Caddy), restarts the app and checks `/healthz`; then, from the laptop, it checks `/healthz`
-over HTTPS and prints the certificate's expiry date. It refuses a host without Caddy, where
-the app would be unreachable. The host, user and site URL come from `deploy/host.env`.
+installs any changed unit files, Caddy drop-ins and `Caddyfile` (refusing a `Caddyfile`
+that doesn't load, before anything restarts), restarts the app and checks `/healthz`, then
+restarts or reloads Caddy and enables it at boot; the app goes first so a port it gives up
+is free for Caddy. Then, from the laptop, it checks `/healthz` over HTTPS and prints the
+certificate's expiry date. It refuses a host without Caddy, where the app would be
+unreachable. The host, user and site URL come from `deploy/host.env`.
 
 Caddy updates: apt keeps upgrading the packaged binary (`caddy.default`), but the one that
 runs is the DuckDNS build, which apt never touches. To update it, build again with the new

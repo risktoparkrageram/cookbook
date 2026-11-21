@@ -6,9 +6,11 @@
 # Refuses unless this checkout is clean and level with origin/main, because the host
 # installs with git pull. On the host: refuse if Caddy isn't installed (the app listens only
 # on 127.0.0.1, so without Caddy nobody could reach it), pull, sync the virtualenv, back up
-# and migrate the database (cookbook migrate), install any changed systemd units, Caddy
-# drop-ins and Caddyfile, restart the app and check /healthz. Then, from here, check
-# /healthz over HTTPS and print the certificate's expiry date.
+# and migrate the database (cookbook migrate), check the Caddyfile, install any changed
+# systemd units, Caddy drop-ins and Caddyfile, restart the app and check /healthz, then
+# restart or reload Caddy and make sure it starts at boot. The app goes first so that, when
+# it moves off a port Caddy is about to take (port 80, on the switch to HTTPS), the port is
+# free. Then, from here, check /healthz over HTTPS and print the certificate's expiry date.
 #
 # Host, user and site URL come from deploy/host.env (DEPLOY_HOST, DEPLOY_USER, DEPLOY_URL;
 # see host.env.example).
@@ -64,6 +66,12 @@ for dropin in deploy/caddy.service.d/*.conf; do
 done
 caddyfile_changed=no
 if ! cmp -s deploy/Caddyfile /etc/caddy/Caddyfile; then
+	# A Caddyfile that doesn't load would leave the site unreachable once the app restarts.
+	sudo sh -c 'set -a; . /etc/cookbook/caddy.env;
+		caddy validate --adapter caddyfile --config deploy/Caddyfile >/dev/null 2>&1' || {
+		echo "deploy/Caddyfile doesn't load with /etc/cookbook/caddy.env: nothing restarted" >&2
+		exit 1
+	}
 	sudo install -m 0644 deploy/Caddyfile /etc/caddy/Caddyfile
 	caddyfile_changed=yes
 fi
@@ -72,14 +80,15 @@ if [ -n "$changed" ]; then
 	sudo systemctl daemon-reload
 	case "$changed" in *cookbook-mdns.service*) sudo systemctl restart cookbook-mdns ;; esac
 fi
+sudo systemctl restart cookbook
+sleep 3
+echo "healthz on the host: $(curl -fsS -m 10 http://127.0.0.1:8000/healthz)"
 case "$changed" in
 *caddy.service.d/*) sudo systemctl restart caddy ;;
 *) if [ "$caddyfile_changed" = yes ]; then sudo systemctl reload-or-restart caddy; fi ;;
 esac
-sudo systemctl restart cookbook
-sleep 3
+sudo systemctl enable --quiet caddy
 echo "deployed $(git log -1 --format='%h %s')"
-echo "healthz on the host: $(curl -fsS -m 10 http://127.0.0.1:8000/healthz)"
 EOF
 
 echo "healthz over HTTPS: $(curl -fsS -m 10 "$DEPLOY_URL/healthz")"
