@@ -5,6 +5,13 @@
   <div class="page-head">
     <h1 class="page-title">Tags</h1>
   </div>
+  <section class="group">
+    <h2 class="label">Cooked</h2>
+    <ul class="tag-list">
+      <li><a class="tag plain" href="/?cooked=yes">Cooked</a> <span class="count">{{ cooked_counts.cooked }}</span></li>
+      <li><a class="tag plain" href="/?cooked=no">Not cooked yet</a> <span class="count">{{ cooked_counts.not_cooked }}</span></li>
+    </ul>
+  </section>
   {% for kind, tags in groups.items() %}
   <section class="group">
     <h2 class="label">{{ kind or "Other" }}</h2>

@@ -20,7 +20,9 @@ from cookbook.settings import Settings
         "/tags",
         "/tags/korean",
         "/sources",
-        "/sources/1",
+        "/sources/Allotment%20Weekly",
+        "/authors",
+        "/authors/Bo%20Writer",
         "/notes",
         "/api/recipes",
         "/api/recipes/tofu_rice_bowl",
@@ -35,7 +37,8 @@ def test_pages_are_found(client: TestClient, path: str) -> None:
     [
         "/recipes/no_such_recipe",
         "/tags/no_such_tag",
-        "/sources/99",
+        "/sources/Cellar%20Notes",
+        "/authors/Cy%20Archive",
         "/api/recipes/no_such_recipe",
         "/recipes/no_such_recipe/export.pdf",
         "/recipes/no_such_recipe/export.zip",
@@ -256,3 +259,28 @@ def test_api_recipes_take_the_search_filters(client: TestClient) -> None:
     response = client.get("/api/recipes?q=tofu&sort=title")
 
     assert [card["slug"] for card in response.json()] == ["chilli_oil_noodles", "tofu_rice_bowl"]
+
+
+def test_cooked_choices_count_the_search_without_the_cooked_filter(client: TestClient) -> None:
+    """Not cooked yet is chosen, yet Cooked still counts the one cooked recipe it would find."""
+    page = client.get("/?cooked=no").text
+
+    assert re.findall(
+        r'<input type="radio" name="cooked" value="(\w*)"( checked)?>\s*'
+        r'<span>([\w ]+)</span>(?: <span class="count">(\d+)</span>)?',
+        page,
+    ) == [
+        ("", "", "Any", ""),
+        ("yes", "", "Cooked", "1"),
+        ("no", " checked", "Not cooked yet", "2"),
+    ]
+
+
+def test_tags_page_links_cooked_and_not_cooked_yet_with_counts(client: TestClient) -> None:
+    """The archived stew is not cooked but is not counted."""
+    page = client.get("/tags").text
+
+    assert re.findall(
+        r'<a class="tag plain" href="/\?cooked=(\w+)">([\w ]+)</a> <span class="count">(\d+)',
+        page,
+    ) == [("yes", "Cooked", "1"), ("no", "Not cooked yet", "2")]

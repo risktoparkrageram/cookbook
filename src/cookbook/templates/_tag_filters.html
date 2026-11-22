@@ -1,4 +1,14 @@
 <div id="tag-filters"{% if oob %} hx-swap-oob="true"{% endif %}>
+  <fieldset class="tag-group">
+    <legend class="label">Cooked</legend>
+    {% for value, name, count in [("", "Any", none), ("yes", "Cooked", cooked_counts.cooked), ("no", "Not cooked yet", cooked_counts.not_cooked)] %}
+    {% set checked = (filters.cooked or "") == value %}
+    <label class="check{% if count == 0 and not checked %} none{% endif %}">
+      <input type="radio" name="cooked" value="{{ value }}"{% if checked %} checked{% endif %}>
+      <span>{{ name }}</span>{% if count is not none %} <span class="count">{{ count }}</span>{% endif %}
+    </label>
+    {% endfor %}
+  </fieldset>
   {% for kind, tags in tag_groups.items() %}
   <fieldset class="tag-group">
     <legend class="label">{{ kind or "Other" }}</legend>

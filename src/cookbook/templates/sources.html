@@ -6,11 +6,10 @@
     <h1 class="page-title">Sources</h1>
   </div>
   <ul class="rows">
-    {% for source in sources %}
+    {% for source in publications %}
     <li>
-      <a href="/sources/{{ source.id }}">
+      <a href="/sources/{{ source.publication|urlencode }}">
         <span class="row-title">{{ source.publication }}</span>
-        {% if source.author %}<span class="row-sub">{{ source.author }}</span>{% endif %}
       </a>
       <span class="count">{{ source.recipe_count }}</span>
     </li>

@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Authors · Cookbook{% endblock %}
+{% block body %}
+<main class="wrap">
+  <div class="page-head">
+    <h1 class="page-title">Authors</h1>
+  </div>
+  <ul class="rows">
+    {% for author in authors %}
+    <li>
+      <a href="/authors/{{ author.author|urlencode }}">
+        <span class="row-title">{{ author.author }}</span>
+        <span class="row-sub">{{ author.publications|join(" · ") }}</span>
+      </a>
+      <span class="count">{{ author.recipe_count }}</span>
+    </li>
+    {% else %}
+    <li class="empty">No authors.</li>
+    {% endfor %}
+  </ul>
+</main>
+{% endblock %}

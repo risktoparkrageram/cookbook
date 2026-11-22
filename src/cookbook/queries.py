@@ -2,7 +2,7 @@ import json
 import sqlite3
 from collections import defaultdict
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Json
 
 from cookbook.schema import TAG_KINDS, TagKind
 from cookbook.units import (
@@ -158,13 +158,28 @@ class TagCount(BaseModel):
     recipe_count: int
 
 
-class SourceCount(BaseModel):
+class PublicationCount(BaseModel):
     model_config = ConfigDict(frozen=True)
 
-    id: int
     publication: str
-    author: str
     recipe_count: int
+
+
+class AuthorCount(BaseModel):
+    """An author on the authors page, with the publications their recipes come from."""
+
+    model_config = ConfigDict(frozen=True)
+
+    author: str
+    publications: Json[list[str]]
+    recipe_count: int
+
+
+class CookedCounts(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    cooked: int
+    not_cooked: int
 
 
 class NoteListing(BaseModel):
@@ -434,26 +449,52 @@ def tag(connection: sqlite3.Connection, name: str) -> Tag | None:
     return Tag.model_validate(dict(row)) if row is not None else None
 
 
-def source_counts(connection: sqlite3.Connection) -> list[SourceCount]:
-    """List the sources of recipes that are not archived, by publication then author."""
+def cooked_counts(connection: sqlite3.Connection, recipe_ids: list[int]) -> CookedCounts:
+    """Count how many of the given recipes are marked cooked and how many are not."""
+    row = connection.execute(
+        """
+        SELECT count(cooked_recipes.recipe_id) AS cooked,
+               count(*) - count(cooked_recipes.recipe_id) AS not_cooked
+        FROM json_each(?) AS results
+        LEFT JOIN cooked_recipes ON cooked_recipes.recipe_id = results.value
+        """,
+        (json.dumps(recipe_ids),),
+    ).fetchone()
+    return CookedCounts.model_validate(dict(row))
+
+
+def publication_counts(connection: sqlite3.Connection) -> list[PublicationCount]:
+    """List the publications of recipes that are not archived, by name, across authors."""
     return [
-        SourceCount.model_validate(dict(row))
+        PublicationCount.model_validate(dict(row))
         for row in connection.execute(
             """
-            SELECT sources.id, sources.publication, sources.author, count(*) AS recipe_count
+            SELECT sources.publication, count(*) AS recipe_count
             FROM sources JOIN recipes ON recipes.source_id = sources.id AND NOT recipes.archived
-            GROUP BY sources.id
-            ORDER BY sources.publication COLLATE NOCASE, sources.author COLLATE NOCASE
+            GROUP BY sources.publication
+            ORDER BY sources.publication COLLATE NOCASE
             """
         )
     ]
 
 
-def source(connection: sqlite3.Connection, source_id: int) -> Source | None:
-    row = connection.execute(
-        "SELECT id, publication, author FROM sources WHERE id = ?", (source_id,)
-    ).fetchone()
-    return Source.model_validate(dict(row)) if row is not None else None
+def author_counts(connection: sqlite3.Connection) -> list[AuthorCount]:
+    """List the named authors of recipes that are not archived, by name, across publications."""
+    return [
+        AuthorCount.model_validate(dict(row))
+        for row in connection.execute(
+            """
+            SELECT author, json_group_array(DISTINCT publication) AS publications,
+                   count(*) AS recipe_count
+            FROM (SELECT sources.author, sources.publication FROM sources
+                  JOIN recipes ON recipes.source_id = sources.id AND NOT recipes.archived
+                  WHERE sources.author != ''
+                  ORDER BY sources.publication COLLATE NOCASE)
+            GROUP BY author
+            ORDER BY author COLLATE NOCASE
+            """
+        )
+    ]
 
 
 def notes(connection: sqlite3.Connection, recipe_id: int, step_id: int | None) -> list[Note]:

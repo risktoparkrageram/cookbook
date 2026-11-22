@@ -245,17 +245,12 @@ def case_find_query_and_tag_together() -> FindCase:
 
 @case(tags="find")
 def case_find_by_publication() -> FindCase:
-    return SearchFilters(publication="Balcony Bakes"), ["almond_biscuits"]
+    return SearchFilters(publication="Allotment Weekly"), ["chilli_oil_noodles", "tofu_rice_bowl"]
 
 
 @case(tags="find")
 def case_find_by_author() -> FindCase:
-    return SearchFilters(author="Ada Example"), ["chilli_oil_noodles", "tofu_rice_bowl"]
-
-
-@case(tags="find")
-def case_find_by_source() -> FindCase:
-    return SearchFilters(source=2), ["almond_biscuits"]
+    return SearchFilters(author="Ada Example"), ["tofu_rice_bowl"]
 
 
 @case(tags="find")

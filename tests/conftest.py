@@ -27,27 +27,31 @@ def database(database_path: Path) -> Iterator[sqlite3.Connection]:
 @pytest.fixture
 def recipes(database: sqlite3.Connection) -> sqlite3.Connection:
     """
-    Four invented recipes, one archived, sharing tags and a source.
+    Four invented recipes, one archived, sharing tags and a publication.
 
     "asian" is on three recipes and "korean" on one, so the kicker must pick the rarer
     cuisine; rows go in out of title and position order so a missing ORDER BY shows.
     "tofu" is the bowl's title, tag and ingredient but only in a step of the noodles, so
     ranking and the ingredient filter each tell the two apart. The bowl's hero is a real
-    4 × 3 WebP, so a PDF can decode it. Only the biscuits are marked cooked.
+    4 × 3 WebP, so a PDF can decode it. Only the biscuits are marked cooked. The bowl and
+    the noodles share a publication but not an author; the stew's author and publication
+    appear on no other recipe, so lists that should skip archived recipes leave them out.
     """
     database.executescript(
         """
         INSERT INTO sources (id, publication, author) VALUES
             (1, 'Allotment Weekly', 'Ada Example'),
-            (2, 'Balcony Bakes', '');
+            (2, 'Balcony Bakes', ''),
+            (3, 'Allotment Weekly', 'Bo Writer'),
+            (4, 'Cellar Notes', 'Cy Archive');
         INSERT INTO recipes (id, slug, title, source_id, url, serves_text, serves_min,
                              serves_max, prep_min, cook_min, total_min, archived) VALUES
             (1, 'tofu_rice_bowl', 'Tofu Rice Bowl', 1, 'https://example.com/tofu', '2–4', 2, 4,
              15, 125, 140, 0),
-            (2, 'chilli_oil_noodles', 'Chilli Oil Noodles', 1, NULL, '2', 2, 2, 10, NULL, 10, 0),
+            (2, 'chilli_oil_noodles', 'Chilli Oil Noodles', 3, NULL, '2', 2, 2, 10, NULL, 10, 0),
             (3, 'almond_biscuits', 'Almond Biscuits', 2, NULL, '~24 biscuits', 24, 24, 20, 12,
              32, 0),
-            (4, 'old_turnip_stew', 'Old Turnip Stew', NULL, NULL, NULL, NULL, NULL, NULL,
+            (4, 'old_turnip_stew', 'Old Turnip Stew', 4, NULL, NULL, NULL, NULL, NULL,
              NULL, NULL, 1);
         UPDATE recipes SET yield_unit = 'biscuits' WHERE id = 3;
         INSERT INTO tags (id, name, kind) VALUES

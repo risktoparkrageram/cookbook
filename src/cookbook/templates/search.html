@@ -41,7 +41,7 @@
     </label>
   </div>
 
-  {% for name, text, values in [("publication", "Publication", sources|map(attribute="publication")|unique|list), ("author", "Author", sources|map(attribute="author")|select|unique|sort|list)] %}
+  {% for name, text, values in [("publication", "Publication", publications|map(attribute="publication")|list), ("author", "Author", authors|map(attribute="author")|list)] %}
   <label class="field"><span class="label">{{ text }}</span>
     <select name="{{ name }}">
       <option value="">Any</option>
@@ -49,15 +49,6 @@
     </select>
   </label>
   {% endfor %}
-  {% if filters.source %}<input type="hidden" name="source" value="{{ filters.source }}">{% endif %}
-
-  <label class="field"><span class="label">Cooked</span>
-    <select name="cooked">
-      {% for value, name in [("", "Any"), ("yes", "Cooked"), ("no", "Not cooked yet")] %}
-      <option value="{{ value }}"{% if (filters.cooked or "") == value %} selected{% endif %}>{{ name }}</option>
-      {% endfor %}
-    </select>
-  </label>
 
   <label class="check"><input type="checkbox" name="has_notes" value="true"{% if filters.has_notes %} checked{% endif %}> <span>Has notes</span></label>
   <label class="check"><input type="checkbox" name="archived" value="true"{% if filters.archived %} checked{% endif %}> <span>Include archived</span></label>

@@ -21,9 +21,15 @@ def home(
     Search and filter the recipes.
 
     htmx asks for just the results and the tag counts as the search changes; a full page
-    otherwise, including when htmx restores a page from history it no longer holds.
+    otherwise, including when htmx restores a page from history it no longer holds. The
+    cooked counts leave out the cooked filter, so each choice shows what it would find.
     """
     recipe_ids = search.find(connection, filters)
+    ids_any_cooked = (
+        recipe_ids
+        if filters.cooked is None
+        else search.find(connection, filters.model_copy(update={"cooked": None}))
+    )
     partial = (
         "HX-Request" in request.headers and "HX-History-Restore-Request" not in request.headers
     )
@@ -35,7 +41,9 @@ def home(
             "filters": filters,
             "cards": queries.recipe_cards(connection, recipe_ids),
             "tag_groups": queries.tag_counts(connection, recipe_ids),
-            "sources": queries.source_counts(connection),
+            "cooked_counts": queries.cooked_counts(connection, ids_any_cooked),
+            "publications": queries.publication_counts(connection),
+            "authors": queries.author_counts(connection),
             "time_limits": TIME_LIMITS,
         },
     )
@@ -71,7 +79,11 @@ def tags_page(request: Request, connection: Database) -> HTMLResponse:
     return templates.TemplateResponse(
         request,
         "tags.html",
-        {"section": "tags", "groups": queries.tag_counts(connection, recipe_ids)},
+        {
+            "section": "tags",
+            "cooked_counts": queries.cooked_counts(connection, recipe_ids),
+            "groups": queries.tag_counts(connection, recipe_ids),
+        },
     )
 
 
@@ -99,25 +111,49 @@ def sources_page(request: Request, connection: Database) -> HTMLResponse:
     return templates.TemplateResponse(
         request,
         "sources.html",
-        {"section": "sources", "sources": queries.source_counts(connection)},
+        {"section": "sources", "publications": queries.publication_counts(connection)},
     )
 
 
-@router.get("/sources/{source_id:int}", response_class=HTMLResponse)
-def source_page(request: Request, connection: Database, source_id: int) -> HTMLResponse:
-    source = queries.source(connection, source_id)
-    if source is None:
+@router.get("/sources/{publication}", response_class=HTMLResponse)
+def publication_page(request: Request, connection: Database, publication: str) -> HTMLResponse:
+    recipe_ids = search.find(connection, SearchFilters(publication=publication))
+    if not recipe_ids:
         raise HTTPException(status_code=404, detail="No such source")
     return templates.TemplateResponse(
         request,
         "listing.html",
         {
             "section": "sources",
-            "label": source.author or "Source",
-            "heading": source.publication,
-            "cards": queries.recipe_cards(
-                connection, search.find(connection, SearchFilters(source=source.id))
-            ),
+            "label": "Source",
+            "heading": publication,
+            "cards": queries.recipe_cards(connection, recipe_ids),
+        },
+    )
+
+
+@router.get("/authors", response_class=HTMLResponse)
+def authors_page(request: Request, connection: Database) -> HTMLResponse:
+    return templates.TemplateResponse(
+        request,
+        "authors.html",
+        {"section": "authors", "authors": queries.author_counts(connection)},
+    )
+
+
+@router.get("/authors/{author}", response_class=HTMLResponse)
+def author_page(request: Request, connection: Database, author: str) -> HTMLResponse:
+    recipe_ids = search.find(connection, SearchFilters(author=author))
+    if not recipe_ids:
+        raise HTTPException(status_code=404, detail="No such author")
+    return templates.TemplateResponse(
+        request,
+        "listing.html",
+        {
+            "section": "authors",
+            "label": "Author",
+            "heading": author,
+            "cards": queries.recipe_cards(connection, recipe_ids),
         },
     )
 

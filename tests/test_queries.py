@@ -1,7 +1,7 @@
 import sqlite3
 
 from cookbook import queries
-from cookbook.queries import ImageLink, NoteListing, SourceCount, TagCount
+from cookbook.queries import AuthorCount, ImageLink, NoteListing, PublicationCount, TagCount
 from cookbook.units import QuantityToken
 
 
@@ -88,10 +88,17 @@ def test_tag_counts_count_the_given_recipes_grouped_by_kind(
     }
 
 
-def test_source_counts_list_sources_by_publication(recipes: sqlite3.Connection) -> None:
-    assert queries.source_counts(recipes) == [
-        SourceCount(id=1, publication="Allotment Weekly", author="Ada Example", recipe_count=2),
-        SourceCount(id=2, publication="Balcony Bakes", author="", recipe_count=1),
+def test_publication_counts_group_authors_and_skip_archived(recipes: sqlite3.Connection) -> None:
+    assert queries.publication_counts(recipes) == [
+        PublicationCount(publication="Allotment Weekly", recipe_count=2),
+        PublicationCount(publication="Balcony Bakes", recipe_count=1),
+    ]
+
+
+def test_author_counts_skip_unnamed_and_archived(recipes: sqlite3.Connection) -> None:
+    assert queries.author_counts(recipes) == [
+        AuthorCount(author="Ada Example", publications='["Allotment Weekly"]', recipe_count=1),
+        AuthorCount(author="Bo Writer", publications='["Allotment Weekly"]', recipe_count=1),
     ]
 
 

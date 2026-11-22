@@ -38,7 +38,6 @@ class SearchFilters(BaseModel):
     tag: list[str] = []
     publication: OptionalText = None
     author: OptionalText = None
-    source: OptionalCount = None
     ingredient: OptionalText = None
     max_total: OptionalCount = None
     max_prep: OptionalCount = None
@@ -54,7 +53,6 @@ class SearchFilters(BaseModel):
         values = [
             self.publication,
             self.author,
-            self.source,
             self.ingredient,
             self.max_total,
             self.max_prep,
@@ -130,7 +128,6 @@ def find(connection: sqlite3.Connection, filters: SearchFilters) -> list[int]:
               = json_array_length(:tags)
           AND (:publication IS NULL OR sources.publication = :publication)
           AND (:author IS NULL OR sources.author = :author)
-          AND (:source IS NULL OR recipes.source_id = :source)
           AND (:ingredient IS NULL OR EXISTS (
                 SELECT 1 FROM ingredients
                 JOIN ingredient_sections ON ingredient_sections.id = ingredients.section_id
@@ -153,7 +150,6 @@ def find(connection: sqlite3.Connection, filters: SearchFilters) -> list[int]:
             "tags": json.dumps(sorted(set(filters.tag))),
             "publication": filters.publication,
             "author": filters.author,
-            "source": filters.source,
             "ingredient": ingredient,
             "max_total": filters.max_total,
             "max_prep": filters.max_prep,
